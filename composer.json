@@ -1,0 +1,25 @@
+{
+    "name": "velocite/utils",
+    "description": "Utils toolkit from fuelphp framework",
+    "type": "utils-set",
+    "license": "MIT",
+    "require": {},
+    "require-dev": {
+        "phpunit/phpunit": "^10.0.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Velocite\\Utils\\": "src/classes/"
+        },
+        "files": [
+            "bootstrap.php"
+        ]
+    },
+    "authors": [
+        {
+            "name": "Adam S",
+            "email": "adamelio@pm.me"
+        }
+    ],
+    "minimum-stability": "dev"
+}
