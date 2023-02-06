@@ -3,10 +3,13 @@
  * Fuel is a fast, lightweight, community driven PHP 5.4+ framework.
  *
  * @package    Fuel
+ *
  * @version    1.9-dev
+ *
  * @author     Fuel Development Team
  * @license    MIT License
  * @copyright  2010 - 2019 Fuel Development Team
+ *
  * @link       https://fuelphp.com
  */
 
@@ -17,34 +20,38 @@ namespace Fuel\Core;
  */
 class Config_Ini extends \Config_File
 {
-	/**
-	 * @var  string  the extension used by this ini file parser
-	 */
-	protected $ext = '.ini';
+    /**
+     * @var string the extension used by this ini file parser
+     */
+    protected $ext = '.ini';
 
-	/**
-	 * Loads in the given file and parses it.
-	 *
-	 * @param   string  $file  File to load
-	 * @return  array
-	 */
-	protected function load_file($file)
-	{
-		$contents = $this->parse_vars(file_get_contents($file));
-		return parse_ini_string($contents, true);
-	}
+    /**
+     * Loads in the given file and parses it.
+     *
+     * @param string $file File to load
+     *
+     * @return array
+     */
+    protected function load_file(string $file) : array
+    {
+        $contents = $this->parse_vars(file_get_contents($file));
 
-	/**
-	 * Returns the formatted config file contents.
-	 *
-	 * @param   array   $contents config array
-	 * @return  string  formatted config file contents
-	 * @throws  \ConfigException
-	 */
-	protected function export_format($contents)
-	{
-		return $this->buildOutputString($contents);
-	}
+        return parse_ini_string($contents, true);
+    }
+
+    /**
+     * Returns the formatted config file contents.
+     *
+     * @param array $contents config array
+     *
+     * @throws \ConfigException
+     *
+     * @return string formatted config file contents
+     */
+    protected function export_format(array $contents) : string
+    {
+        return $this->buildOutputString($contents);
+    }
 
     /**
      * Generated the output of the ini file, suitable for echo'ing or
@@ -52,9 +59,9 @@ class Config_Ini extends \Config_File
      *
      * @param array $array array of ini data
      *
-     * @return  string
+     * @return string
      */
-    protected function buildOutputString(array $array, array $parent = []): string
+    protected function buildOutputString(array $array, array $parent = []) : string
     {
         $returnValue = '';
 
@@ -63,19 +70,28 @@ class Config_Ini extends \Config_File
             if (is_array($value)) // Subsection case
             {
                 // Merge all the sections into one array
-                if (is_int($key)) $key++;
-                $subSection = array_merge($parent, (array)$key);
+                if (is_int($key))
+                {
+                    $key++;
+                }
+                $subSection = array_merge($parent, (array) $key);
                 // Add section information to the output
                 if (Arr::is_assoc($value))
                 {
-                    if (count($subSection) > 1) $returnValue .= PHP_EOL;
+                    if (count($subSection) > 1)
+                    {
+                        $returnValue .= PHP_EOL;
+                    }
                     $returnValue .= '[' . implode(':', $subSection) . ']' . PHP_EOL;
                 }
                 // Recursively traverse deeper
                 $returnValue .= $this->buildOutputString($value, $subSection);
                 $returnValue .= PHP_EOL;
             }
-            elseif (isset($value)) $returnValue .= "$key=" . (is_bool($value) ? var_export($value, true) : $value) . PHP_EOL; // Plain key->value case
+            elseif (isset($value))
+            {
+                $returnValue .= "{$key}=" . (is_bool($value) ? var_export($value, true) : $value) . PHP_EOL;
+            } // Plain key->value case
         }
 
         return count($parent) ? $returnValue : rtrim($returnValue) . PHP_EOL;
