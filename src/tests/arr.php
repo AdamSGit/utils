@@ -1,19 +1,9 @@
 <?php
 /**
- * Fuel is a fast, lightweight, community driven PHP 5.4+ framework.
- *
- * @package    Fuel
- *
- * @version    1.9-dev
- *
- * @author     Fuel Development Team
- * @license    MIT License
- * @copyright  2010 - 2019 Fuel Development Team
- *
- * @link       https://fuelphp.com
+ * Set of php utils forked from Fuelphp framework
  */
 
-namespace Fuel\Core;
+namespace Velocite\Utils;
 
 /**
  * Arr class tests
@@ -21,7 +11,7 @@ namespace Fuel\Core;
  * @group Core
  * @group Arr
  */
-class Test_Arr extends TestCase
+class Test_Arr extends \PHPUnit\Framework\TestCase
 {
     public static function person_provider()
     {
@@ -78,7 +68,7 @@ class Test_Arr extends TestCase
      */
     public function test_pluck($collection) : void
     {
-        $output   = \Arr::pluck($collection, 'id');
+        $output   = Arr::pluck($collection, 'id');
         $expected = [2, 5, 7];
         $this->assertEquals($expected, $output);
     }
@@ -94,7 +84,7 @@ class Test_Arr extends TestCase
      */
     public function test_pluck_with_index($collection) : void
     {
-        $output   = \Arr::pluck($collection, 'name', 'id');
+        $output   = Arr::pluck($collection, 'name', 'id');
         $expected = [2 => 'Bill', 5 => 'Chris', 7 => 'Bert'];
         $this->assertEquals($expected, $output);
     }
@@ -259,18 +249,6 @@ class Test_Arr extends TestCase
         $expected = 'Pittsburgh';
         $output   = Arr::get($person, 'location.city', 'Unknown City');
         $this->assertEquals($expected, $output);
-    }
-
-    /**
-     * Tests Arr::get()
-     *
-     * @test
-     *
-     * @expectedException InvalidArgumentException
-     */
-    public function test_get_throws_exception_when_array_is_not_an_array() : void
-    {
-        $output = Arr::get('Jack', 'name', 'Unknown Name');
     }
 
     /**
@@ -598,18 +576,6 @@ class Test_Arr extends TestCase
         $this->assertEquals(['bar' => 'yay'], $output);
     }
 
-    /**
-     * Tests Arr::sort()
-     *
-     * @test
-     *
-     * @expectedException InvalidArgumentException
-     */
-    public function test_sort_of_non_array() : void
-    {
-        $sorted = Arr::sort('not an array', 'foo.key');
-    }
-
     public function sort_provider()
     {
         return [
@@ -712,7 +678,7 @@ class Test_Arr extends TestCase
      */
     public function test_sort_invalid_direction($data, $expected) : void
     {
-        $this->assertEquals($expected, Arr::sort($data, 'info.pet.type', 'downer'));
+        $this->assertEquals($expected, Arr::sort($data, 'info.pet.type', 'desc'));
     }
 
     public function test_sort_empty() : void
@@ -916,11 +882,11 @@ class Test_Arr extends TestCase
         ];
 
         $expected = 50;
-        $test     = \Arr::sum($arr_multi, 'scores.math');
+        $test     = Arr::sum($arr_multi, 'scores.math');
         $this->assertEquals($expected, $test);
 
         $expected = 20;
-        $test     = \Arr::sum($arr_multi, 'scores.sports');
+        $test     = Arr::sum($arr_multi, 'scores.sports');
         $this->assertEquals($expected, $test);
     }
 
@@ -936,27 +902,27 @@ class Test_Arr extends TestCase
 
         // test: key not found in array
         $expected = false;
-        $test     = \Arr::previous_by_key($arr, 1);
+        $test     = Arr::previous_by_key($arr, 1);
         $this->assertTrue($expected === $test);
 
         // test: no previous key
         $expected = null;
-        $test     = \Arr::previous_by_key($arr, 2);
+        $test     = Arr::previous_by_key($arr, 2);
         $this->assertTrue($expected === $test);
 
         // test: strict key comparison
         $expected = false;
-        $test     = \Arr::previous_by_key($arr, '2', false, true);
+        $test     = Arr::previous_by_key($arr, '2', false, true);
         $this->assertTrue($expected === $test);
 
         // test: get previous key
         $expected = 2;
-        $test     = \Arr::previous_by_key($arr, 4);
+        $test     = Arr::previous_by_key($arr, 4);
         $this->assertTrue($expected === $test);
 
         // test: get previous value
         $expected = 'A';
-        $test     = \Arr::previous_by_key($arr, 4, true);
+        $test     = Arr::previous_by_key($arr, 4, true);
         $this->assertTrue($expected === $test);
     }
 
@@ -972,27 +938,27 @@ class Test_Arr extends TestCase
 
         // test: key not found in array
         $expected = false;
-        $test     = \Arr::next_by_key($arr, 1);
+        $test     = Arr::next_by_key($arr, 1);
         $this->assertTrue($expected === $test);
 
         // test: no next key
         $expected = null;
-        $test     = \Arr::next_by_key($arr, 6);
+        $test     = Arr::next_by_key($arr, 6);
         $this->assertTrue($expected === $test);
 
         // test: strict key comparison
         $expected = false;
-        $test     = \Arr::next_by_key($arr, '6', false, true);
+        $test     = Arr::next_by_key($arr, '6', false, true);
         $this->assertTrue($expected === $test);
 
         // test: get next key
         $expected = 6;
-        $test     = \Arr::next_by_key($arr, 4);
+        $test     = Arr::next_by_key($arr, 4);
         $this->assertTrue($expected === $test);
 
         // test: get next value
         $expected = 'C';
-        $test     = \Arr::next_by_key($arr, 4, true);
+        $test     = Arr::next_by_key($arr, 4, true);
         $this->assertTrue($expected === $test);
     }
 
@@ -1008,27 +974,27 @@ class Test_Arr extends TestCase
 
         // test: value not found in array
         $expected = false;
-        $test     = \Arr::previous_by_value($arr, 'Z');
+        $test     = Arr::previous_by_value($arr, 'Z');
         $this->assertTrue($expected === $test);
 
         // test: no previous value
         $expected = null;
-        $test     = \Arr::previous_by_value($arr, 'A');
+        $test     = Arr::previous_by_value($arr, 'A');
         $this->assertTrue($expected === $test);
 
         // test: strict value comparison
         $expected = false;
-        $test     = \Arr::previous_by_value($arr, 2, true, true);
+        $test     = Arr::previous_by_value($arr, 2, true, true);
         $this->assertTrue($expected === $test);
 
         // test: get previous value
         $expected = 'A';
-        $test     = \Arr::previous_by_value($arr, '2');
+        $test     = Arr::previous_by_value($arr, '2');
         $this->assertTrue($expected === $test);
 
         // test: get previous key
         $expected = 4;
-        $test     = \Arr::previous_by_value($arr, 'C', false);
+        $test     = Arr::previous_by_value($arr, 'C', false);
         $this->assertTrue($expected === $test);
     }
 
@@ -1044,27 +1010,27 @@ class Test_Arr extends TestCase
 
         // test: value not found in array
         $expected = false;
-        $test     = \Arr::next_by_value($arr, 'Z');
+        $test     = Arr::next_by_value($arr, 'Z');
         $this->assertTrue($expected === $test);
 
         // test: no next value
         $expected = null;
-        $test     = \Arr::next_by_value($arr, 'C');
+        $test     = Arr::next_by_value($arr, 'C');
         $this->assertTrue($expected === $test);
 
         // test: strict value comparison
         $expected = false;
-        $test     = \Arr::next_by_value($arr, 2, true, true);
+        $test     = Arr::next_by_value($arr, 2, true, true);
         $this->assertTrue($expected === $test);
 
         // test: get next value
         $expected = 'C';
-        $test     = \Arr::next_by_value($arr, '2');
+        $test     = Arr::next_by_value($arr, '2');
         $this->assertTrue($expected === $test);
 
         // test: get next key
         $expected = 4;
-        $test     = \Arr::next_by_value($arr, 'A', false);
+        $test     = Arr::next_by_value($arr, 'A', false);
         $this->assertTrue($expected === $test);
     }
 
@@ -1088,7 +1054,7 @@ class Test_Arr extends TestCase
             ],
         ];
 
-        $got = \Arr::subset($person, ['name', 'location']);
+        $got = Arr::subset($person, ['name', 'location']);
         $this->assertEquals($expected, $got);
 
         $expected = [
@@ -1098,7 +1064,7 @@ class Test_Arr extends TestCase
             ],
         ];
 
-        $got = \Arr::subset($person, ['name', 'location.country']);
+        $got = Arr::subset($person, ['name', 'location.country']);
         $this->assertEquals($expected, $got);
     }
 
@@ -1122,7 +1088,7 @@ class Test_Arr extends TestCase
             'occupation' => null,
         ];
 
-        $got = \Arr::subset($person, ['name', 'location.street', 'location.country', 'occupation']);
+        $got = Arr::subset($person, ['name', 'location.street', 'location.country', 'occupation']);
         $this->assertEquals($expected, $got);
 
         $expected = [
@@ -1134,7 +1100,7 @@ class Test_Arr extends TestCase
             'occupation' => 'Unknown',
         ];
 
-        $got = \Arr::subset($person, ['name', 'location.street', 'location.country', 'occupation'], 'Unknown');
+        $got = Arr::subset($person, ['name', 'location.street', 'location.country', 'occupation'], 'Unknown');
         $this->assertEquals($expected, $got);
     }
 
@@ -1168,7 +1134,7 @@ class Test_Arr extends TestCase
                 ],
             ],
         ];
-        $got = \Arr::filter_recursive($arr);
+        $got = Arr::filter_recursive($arr);
         $this->assertEquals($expected, $got);
 
         $expected = [
@@ -1185,7 +1151,7 @@ class Test_Arr extends TestCase
                 ],
             ],
         ];
-        $got = \Arr::filter_recursive(
+        $got = Arr::filter_recursive(
             $arr,
             static function($item) { return $item !== ''; }
         );

@@ -3,11 +3,19 @@
  * Bootstrap velocite package
  */
 
-// Make sure app path is defined
-defined('APPPATH') or die('APPPATH constant must be declared before composer autoload');
+// Environment
+! defined('VELOCITE_ENV') and define('VELOCITE_ENV', $_SERVER['VELOCITE_ENV'] ?? 'development');
 
-// Env mode
-! defined('VELOCITE_ENV') and define('VELOCITE_ENV', 'development');
+// Make sure app path is defined
+if (VELOCITE_ENV === 'test')
+{
+    ! defined ('APPPATH') and define('APPPATH', __DIR__);
+}
+else
+{
+    defined('APPPATH') or die('Velocite : APPPATH constant must be declared before composer autoload and point to application root path');
+}
+
 // Directory sepataror shortcut
 ! defined('DS') and define('DS', DIRECTORY_SEPARATOR);
 // Carriage return shortcut

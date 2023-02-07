@@ -865,9 +865,9 @@ final class Arr
      *
      * @param array $array the array containing the values
      *
-     * @return number the average value
+     * @return float the average value
      */
-    public static function average(array $array) : number
+    public static function average(array $array) : float
     {
         // No arguments passed, lets not divide by 0
         if ( ! ($count = count($array)) > 0)
@@ -875,7 +875,7 @@ final class Arr
             return 0;
         }
 
-        return array_sum($array) / $count;
+        return (float) array_sum($array) / $count;
     }
 
     /**
@@ -1159,16 +1159,16 @@ final class Arr
      * @param array  $array the array containing the values
      * @param string $key   key of the value to pluck
      *
-     * @return number the sum value
+     * @return float the sum value
      */
-    public static function sum(array $array, string $key) : number
+    public static function sum(array $array, string $key) : float
     {
         if ( ! is_array($array) and ! $array instanceof \ArrayAccess)
         {
             throw new \InvalidArgumentException('First parameter must be an array or ArrayAccess object.');
         }
 
-        return array_sum(static::pluck($array, $key));
+        return (float) array_sum(static::pluck($array, $key));
     }
 
     /**
@@ -1222,7 +1222,7 @@ final class Arr
         elseif ( ! isset($keys[$index-1]))
         {
             // there is none
-            return;
+            return null;
         }
 
         // return the value or the key of the array entry the previous key points to
@@ -1260,7 +1260,7 @@ final class Arr
         elseif ( ! isset($keys[$index+1]))
         {
             // there is none
-            return;
+            return null;
         }
 
         // return the value or the key of the array entry the previous key points to
@@ -1298,7 +1298,7 @@ final class Arr
         // if there is no previous one, bail out
         if ( ! isset($keys[$index-1]))
         {
-            return;
+            return null;
         }
 
         // return the value or the key of the array entry the previous key points to
@@ -1336,7 +1336,7 @@ final class Arr
         // if there is no next one, bail out
         if ( ! isset($keys[$index+1]))
         {
-            return;
+            return null;
         }
 
         // return the value or the key of the array entry the next key points to

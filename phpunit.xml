@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    noInteraction="true"
+    colors="true"
+    stopOnFailure="false"
+    defaultTimeLimit="60"
+    enforceTimeLimit="true"
+    stopOnSkipped="true"
+    beStrictAboutOutputDuringTests="true"
+    testdox="true"
+    convertErrorsToExceptions="false"
+    convertNoticesToExceptions="false"
+    convertWarningsToExceptions="false"
+    xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd"
+>
+    <coverage processUncoveredFiles="false">
+        <include>
+            <directory suffix=".php">./src/classes</directory>
+        </include>
+        <exclude>
+        </exclude>
+    </coverage>
+    <logging>
+        <testdoxHtml outputFile="./unit.log.html"/>
+    </logging>
+    <php>
+        <server name="VELOCITE_ENV" value="test"/>
+    </php>
+    <testsuites>
+        <testsuite name="utils">
+            <file suffix=".php">./src/tests/arr.php</file>
+        </testsuite>
+    </testsuites>
+</phpunit>

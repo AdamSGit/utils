@@ -252,9 +252,9 @@ class Str
      * If you call the closure with false as the arg it will return the value without
      * alternating the next time.
      *
-     * @return Closure
+     * @return \Closure
      */
-    public static function alternator() : Closure
+    public static function alternator() : \Closure
     {
         // the args are the values to alternate
         $args = func_get_args();
@@ -630,3 +630,18 @@ class Str
             ? mb_convert_case($str, MB_CASE_TITLE, $encoding)
             : ucwords(strtolower($str));
     }
+
+    /**
+     * Takes a value and checks if it is a Closure or not, if it is it
+     * will return the result of the closure, if not, it will simply return the
+     * value.
+     *
+     * @param mixed $var The value to get
+     *
+     * @return mixed
+     */
+    public static function value(mixed $var) : mixed
+    {
+        return ($var instanceof \Closure) ? $var() : $var;
+    }
+}

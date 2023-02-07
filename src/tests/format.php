@@ -1,19 +1,9 @@
 <?php
 /**
- * Fuel is a fast, lightweight, community driven PHP 5.4+ framework.
- *
- * @package    Fuel
- *
- * @version    1.9-dev
- *
- * @author     Fuel Development Team
- * @license    MIT License
- * @copyright  2010 - 2019 Fuel Development Team
- *
- * @link       https://fuelphp.com
+ * Set of php utils forked from Fuelphp framework
  */
 
-namespace Fuel\Core;
+namespace Velocite\Utils;
 
 /**
  * Format class tests
@@ -21,7 +11,7 @@ namespace Fuel\Core;
  * @group Core
  * @group Format
  */
-class Test_Format extends TestCase
+class Test_Format extends \PHPUnit\Framework\TestCase
 {
     public static function array_provider()
     {
