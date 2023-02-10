@@ -3,7 +3,7 @@
  * Set of php utils forked from Fuelphp framework
  */
 
-namespace Velocite\Utils;
+namespace Velocite;
 
 /**
  * Cache_Handler_Serialized class tests

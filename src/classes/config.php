@@ -3,7 +3,7 @@
  * Set of php utils forked from Fuelphp framework
  */
 
-namespace Velocite\Utils;
+namespace Velocite;
 
 class ConfigException extends \Exception
 {
@@ -96,10 +96,13 @@ class Config
                         }
                     }
 
-                    $class = '\\Velocite\\Utils\\Config\\' . ucfirst($type);
+                    $class = '\\Velocite\\Config\\' . ucfirst($type);
 
                     if (class_exists($class))
                     {
+                        // Call init method if the class has some
+                        method_exists($class, '_init') and $class::_init();
+
                         static::$loaded_files[$file] = true;
                         $class                       = new $class($file);
                     }

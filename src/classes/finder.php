@@ -3,7 +3,7 @@
  * Set of php utils forked from Fuelphp framework
  */
 
-namespace Velocite\Utils;
+namespace Velocite;
 
 /**
  * The Finder class allows for searching through a search path for a given
@@ -51,13 +51,13 @@ class Finder
 
     public static function _init() : void
     {
-        \Config::load('file', true);
+        Config::load('file', true);
 
         // make sure the configured chmod values are octal
-        $chmod = \Config::get('file.chmod.folders', 0777);
-        is_string($chmod) and \Config::set('file.chmod.folders', octdec($chmod));
-        $chmod = \Config::get('file.chmod.files', 0666);
-        is_string($chmod) and \Config::set('file.chmod.files', octdec($chmod));
+        $chmod = Config::get('file.chmod.folders', 0777);
+        is_string($chmod) and Config::set('file.chmod.folders', octdec($chmod));
+        $chmod = Config::get('file.chmod.files', 0666);
+        is_string($chmod) and Config::set('file.chmod.files', octdec($chmod));
     }
 
     /**
@@ -420,8 +420,8 @@ class Finder
     public function read_cache(string $cache_id) : void
     {
         // make sure we have all config data
-        empty($this->cache_dir)      and $this->cache_dir           = \Config::get('cache_dir', APPPATH . 'cache/');
-        empty($this->cache_lifetime) and $this->cache_lifetime      = \Config::get('cache_lifetime', 3600);
+        empty($this->cache_dir)      and $this->cache_dir           = Config::get('cache_dir', APPPATH . 'cache/');
+        empty($this->cache_lifetime) and $this->cache_lifetime      = Config::get('cache_lifetime', 3600);
 
         if ($cached = $this->cache($cache_id))
         {
@@ -539,10 +539,10 @@ class Finder
         if ( ! is_dir($dir))
         {
             // Create the cache directory
-            mkdir($dir, \Config::get('file.chmod.folders', 0777), true);
+            mkdir($dir, Config::get('file.chmod.folders', 0777), true);
 
             // Set permissions (must be manually set to fix umask issues)
-            chmod($dir, \Config::get('file.chmod.folders', 0777));
+            chmod($dir, Config::get('file.chmod.folders', 0777));
         }
 
         // Force the data to be a string
@@ -555,7 +555,7 @@ class Finder
             {
                 try
                 {
-                    chmod($dir . $file, \Config::get('file.chmod.files', 0666));
+                    chmod($dir . $file, Config::get('file.chmod.files', 0666));
                 }
                 catch (\PhpErrorException $e)
                 {

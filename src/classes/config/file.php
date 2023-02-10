@@ -3,11 +3,11 @@
  * Set of php utils forked from Fuelphp framework
  */
 
-namespace Velocite\Utils\Config;
+namespace Velocite\Config;
 
-use Velocite\Utils\Arr;
-use Velocite\Utils\Finder;
-use Velocite\Utils\ConfigException;
+use Velocite\Arr;
+use Velocite\Finder;
+use Velocite\ConfigException;
 
 /**
  * A base Config File class for File based configs.

@@ -3,7 +3,7 @@
  * Set of php utils forked from Fuelphp framework
  */
 
-namespace Velocite\Utils\Config;
+namespace Velocite\Config;
 
 /**
  * Config interface

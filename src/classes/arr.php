@@ -3,7 +3,7 @@
  * Set of php utils forked from Fuelphp framework
  */
 
-namespace Velocite\Utils;
+namespace Velocite;
 
 /**
  * Array manipulation class
@@ -16,11 +16,11 @@ final class Arr
      *
      * @param array        $array   The search array
      * @param string|array $key     The dot-notated key or array of keys
-     * @param string       $default The default value
+     * @param mixed       $default The default value
      *
      * @return mixed
      */
-    public static function get(array $array, string|array $key, ?string $default = null) : mixed
+    public static function get(array $array, string|array $key, mixed $default = null) : mixed
     {
         if ( ! is_array($array) and ! $array instanceof \ArrayAccess)
         {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Velocite\Utils;
+namespace Velocite;
 
 class SecurityException extends \DomainException
 {

@@ -9,11 +9,8 @@
     },
     "autoload": {
         "psr-4": {
-            "Velocite\\Utils\\": "src/classes/"
-        },
-        "files": [
-            "bootstrap.php"
-        ]
+            "Velocite\\": "src/classes/"
+        }
     },
     "authors": [
         {

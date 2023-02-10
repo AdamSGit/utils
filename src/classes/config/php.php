@@ -3,7 +3,7 @@
  * Set of php utils forked from Fuelphp framework
  */
 
-namespace Velocite\Utils\Config;
+namespace Velocite\Config;
 
 /**
  * PHP Config file parser
@@ -36,7 +36,7 @@ class Php extends File
     public static function _init() : void
     {
         // do we have Opcache active?
-        static::$uses_opcache = (PHP_VERSION_ID >= 50500 and function_exists('opcache_invalidate'));
+        static::$uses_opcache = function_exists('opcache_invalidate');
 
         // do we have APC active?
         static::$uses_apc = function_exists('apc_compile_file');
@@ -89,7 +89,7 @@ class Php extends File
      */
     protected function load_file(string $file) : array
     {
-        return velocite_load_file($file);
+        return include $file;
     }
 
     /**
