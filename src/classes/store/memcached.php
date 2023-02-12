@@ -1,25 +1,19 @@
 <?php
 /**
- * Fuel is a fast, lightweight, community driven PHP 5.4+ framework.
- *
- * @package    Fuel
- *
- * @version    1.9-dev
- *
- * @author     Fuel Development Team
- * @license    MIT License
- * @copyright  2010 - 2019 Fuel Development Team
- *
- * @link       https://fuelphp.com
+ * Set of php utils forked from Fuelphp framework
  */
 
-namespace Fuel\Core;
+namespace Velocite\Store;
+
+use Velocite\StoreException;
 
 /**
- * DB config data parser
+ * Memcached store parser
  */
-class Config_Memcached implements Config_Interface
+class Memcached implements StoreInterface
 {
+    use Vars;
+
     /**
      * @var array of driver config defaults
      */
@@ -41,12 +35,10 @@ class Config_Memcached implements Config_Interface
 
     protected $ext = '.mem';
 
-    protected $vars = [];
-
     /**
      * driver initialisation
      *
-     * @throws \FuelException
+     * @throws StoreException
      */
     public static function _init() : void
     {
@@ -57,7 +49,7 @@ class Config_Memcached implements Config_Interface
             // do we have the PHP memcached extension available
             if ( ! class_exists('Memcached') )
             {
-                throw new \FuelException('Memcached config storage is required, but your PHP installation doesn\'t have the Memcached extension loaded.');
+                throw new StoreException('Memcached config storage is required, but your PHP installation doesn\'t have the Memcached extension loaded.');
             }
 
             // instantiate the memcached object
@@ -75,7 +67,7 @@ class Config_Memcached implements Config_Interface
 
                 if ( ! isset($added[$server]) or $added[$server]['pid'] == -1)
                 {
-                    throw new \FuelException('Memcached config storage is required, but there is no connection possible. Check your configuration.');
+                    throw new StoreException('Memcached config storage is required, but there is no connection possible. Check your configuration.');
                 }
             }
         }
@@ -92,10 +84,7 @@ class Config_Memcached implements Config_Interface
         $this->identifier = $identifier;
 
         $this->vars = [
-            'APPPATH'  => APPPATH,
-            'COREPATH' => COREPATH,
-            'PKGPATH'  => PKGPATH,
-            'DOCROOT'  => DOCROOT,
+            'APPPATH'  => APPPATH
         ] + $vars;
     }
 
@@ -130,64 +119,14 @@ class Config_Memcached implements Config_Interface
      *
      * @param $contents $contents    config array to save
      *
-     * @throws \FuelException
+     * @throws StoreException
      */
     public function save($contents) : void
     {
         // write it to the memcached server
         if (static::$memcached->set(static::$config['identifier'] . '_' . $this->identifier, $contents, 0) === false)
         {
-            throw new \FuelException('Memcached returned error code "' . static::$memcached->getResultCode() . '" on write. Check your configuration.');
-        }
-    }
-
-    /**
-     * Parses a string using all of the previously set variables.  Allows you to
-     * use something like %APPPATH% in non-PHP files.
-     *
-     * @param string $string String to parse
-     *
-     * @return string
-     */
-    protected function parse_vars(string $string) : string
-    {
-        foreach ($this->vars as $var => $val)
-        {
-            $string = str_replace("%{$var}%", $val, $string);
-        }
-
-        return $string;
-    }
-
-    /**
-     * Replaces FuelPHP's path constants to their string counterparts.
-     *
-     * @param array $array array to be prepped
-     *
-     * @return array prepped array
-     */
-    protected function prep_vars(array &$array) : array
-    {
-        static $replacements;
-
-        if ( ! isset($replacements))
-        {
-            foreach ($this->vars as $i => $v)
-            {
-                $replacements['#^(' . preg_quote($v) . '){1}(.*)?#'] = '%' . $i . '%$2';
-            }
-        }
-
-        foreach ($array as $i => $value)
-        {
-            if (is_string($value))
-            {
-                $array[$i] = preg_replace(array_keys($replacements), array_values($replacements), $value);
-            }
-            elseif (is_array($value))
-            {
-                $this->prep_vars($array[$i]);
-            }
+            throw new StoreException('Memcached returned error code "' . static::$memcached->getResultCode() . '" on write. Check your configuration.');
         }
     }
 }

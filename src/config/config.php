@@ -9,9 +9,7 @@
  * -----------------------------------------------------------------------------
  *
  *  If you need to make modifications to the default configuration,
- *  copy this file to your 'app/config' folder, and make them in there.
- *
- *  This will allow you to upgrade FuelPHP without losing your custom config.
+ *  copy this file to your app config folder, and make them in there.
  *
  */
 
@@ -171,7 +169,7 @@ return [
      *
      */
 
-    'log_threshold' => \Fuel::L_WARNING,
+    // 'log_threshold' => \Fuel::L_WARNING,
 
     /*
      * -------------------------------------------------------------------------

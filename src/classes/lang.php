@@ -5,6 +5,11 @@
 
 namespace Velocite;
 
+use Velocite\Exception\LangException;
+
+/**
+ * Language class (i18n)
+ */
 class Lang
 {
     /**
@@ -24,7 +29,7 @@ class Lang
 
     public static function _init() : void
     {
-        static::$fallback = (array) \Config::get('language_fallback', 'en');
+        static::$fallback = (array) Config::get('language_fallback', 'en');
     }
 
     /**
@@ -34,7 +39,7 @@ class Lang
      */
     public static function get_lang() : string
     {
-        $language                      = \Config::get('language');
+        $language                      = Config::get('language');
         empty($language) and $language = static::$fallback[0];
 
         return $language;
@@ -43,17 +48,17 @@ class Lang
     /**
      * Loads a language file.
      *
-     * @param mixed       $file      string file | language array | Lang_Interface instance
+     * @param mixed       $file      string file | language array | LangInterface instance
      * @param mixed       $group     null for no group, true for group is filename, false for not storing in the master lang
      * @param string|null $language  name of the language to load, null for the configured language
-     * @param bool        $overwrite true for array_merge, false for \Arr::merge
+     * @param bool        $overwrite true for array_merge, false for Arr::merge
      * @param bool        $reload    true to force a reload even if the file is already loaded
      *
-     * @throws \FuelException
+     * @throws Exception\Lang
      *
      * @return array the (loaded) language array
      */
-    public static function load($file, $group = null, ?string $language = null, bool $overwrite = false, bool $reload = false) : array
+    public static function load($file, $group = null, ?string $language = null, bool $overwrite = false, bool $reload = false) : ?array
     {
         // get the active language and all fallback languages
         $language or $language = static::get_lang();
@@ -68,72 +73,36 @@ class Lang
         // stick the active language to the front of the list
         array_unshift($languages, $language);
 
-        if ( ! $reload          and
-             ! is_array($file)  and
-             ! is_object($file) and
-            array_key_exists($language . '/' . $file, static::$loaded_files))
-        {
-            $group === true and $group = $file;
+        $group === true and $group = $file;
 
-            if ($group === null or $group === false or ! isset(static::$lines[$language][$group]))
+        if ( ! $reload and ! is_array($file)  and ! is_object($file) and array_key_exists($language . '/' . $file, static::$loaded_files))
+        {
+            if ($group and isset(static::$lines[$language][$group]))
             {
-                return false;
+                return static::$lines[$language][$group];
             }
 
-            return static::$lines[$language][$group];
+            return null;
         }
 
         $lang = [];
 
-        if (is_array($file))
+        static::$loaded_files[$language . '/' . $file] = func_get_args();
+        
+        try
         {
-            $lang = $file;
+            $lang = Store::load( "lang/{$language}", $file );
         }
-        elseif (is_string($file))
+        catch( StoreException $e )
         {
-            $info = pathinfo($file);
-            $type = 'php';
-
-            if (isset($info['extension']))
-            {
-                $type = $info['extension'];
-                // Keep extension when it's an absolute path, because the finder won't add it
-                if ($file[0] !== '/' and $file[1] !== ':')
-                {
-                    $file = substr($file, 0, -(strlen($type) + 1));
-                }
-            }
-            $class = '\\Lang_' . ucfirst($type);
-
-            if (class_exists($class))
-            {
-                static::$loaded_files[$language . '/' . $file] = func_get_args();
-                $file                                          = new $class($file, $languages);
-            }
-            else
-            {
-                throw new \FuelException(sprintf('Invalid lang type "%s".', $type));
-            }
-        }
-
-        if ($file instanceof Lang_Interface)
-        {
-            try
-            {
-                $lang = $file->load($overwrite);
-            }
-            catch (Exception\Lang $e)
-            {
-                $lang = [];
-            }
-            $group = $group === true ? $file->group() : $group;
+            throw new LangException(sprintf('Config file "%s" not found.', $file));
         }
 
         isset(static::$lines[$language]) or static::$lines[$language] = [];
 
         if ($group === null)
         {
-            static::$lines[$language] = $overwrite ? array_merge(static::$lines[$language], $lang) : \Arr::merge(static::$lines[$language], $lang);
+            static::$lines[$language] = $overwrite ? array_merge(static::$lines[$language], $lang) : Arr::merge(static::$lines[$language], $lang);
         }
         else
         {
@@ -141,11 +110,11 @@ class Lang
 
             if ($overwrite)
             {
-                \Arr::set(static::$lines[$language], $group, array_merge(\Arr::get(static::$lines[$language], $group, []), $lang));
+                Arr::set(static::$lines[$language], $group, array_merge(Arr::get(static::$lines[$language], $group, []), $lang));
             }
             else
             {
-                \Arr::set(static::$lines[$language], $group, \Arr::merge(\Arr::get(static::$lines[$language], $group, []), $lang));
+                Arr::set(static::$lines[$language], $group, Arr::merge(Arr::get(static::$lines[$language], $group, []), $lang));
             }
         }
 
@@ -167,42 +136,17 @@ class Lang
     {
         ($language === null) and $language = static::get_lang();
 
-        // prefix the file with the language
-        if ( null !== $language)
-        {
-            $file = explode('::', $file);
-            end($file);
-            $file[key($file)] = $language . DS . end($file);
-            $file             = implode('::', $file);
-        }
-
         if ( ! is_array($lang))
         {
             if ( ! isset(static::$lines[$language][$lang]))
             {
                 return false;
             }
+
             $lang = static::$lines[$language][$lang];
         }
 
-        $type = pathinfo($file, PATHINFO_EXTENSION);
-
-        if ( ! $type)
-        {
-            $type = 'php';
-            $file .= '.' . $type;
-        }
-
-        $class = '\\Lang_' . ucfirst($type);
-
-        if ( ! class_exists($class, true))
-        {
-            throw new Exception\Lang('Cannot save a language file of type: ' . $type);
-        }
-
-        $driver = new $class();
-
-        return $driver->save($file, $lang);
+        return Store::save($file, $lang);
     }
 
     /**
@@ -218,8 +162,9 @@ class Lang
     public static function get(string $line, array $params = [], $default = null, ?string $language = null) : mixed
     {
         ($language === null) and $language = static::get_lang();
+        $value                             = Str::value(Arr::get(static::$lines[$language], $line, $default));
 
-        return isset(static::$lines[$language]) ? \Str::tr(\Fuel::value(\Arr::get(static::$lines[$language], $line, $default)), $params) : $default;
+        return $value ? Str::tr($value, $params) : $default;
     }
 
     /**
@@ -230,7 +175,7 @@ class Lang
      * @param string      $group    group
      * @param string|null $language name of the language to set, null for the configured language
      *
-     * @return void the \Arr::set result
+     * @return void the Arr::set result
      */
     public static function set(string $line, $value, ?string $group = null, ?string $language = null) : void
     {
@@ -240,7 +185,7 @@ class Lang
 
         isset(static::$lines[$language]) or static::$lines[$language] = [];
 
-        \Arr::set(static::$lines[$language], $line, \Fuel::value($value));
+        Arr::set(static::$lines[$language], $line, Str::value($value));
     }
 
     /**
@@ -250,7 +195,7 @@ class Lang
      * @param string      $group    group
      * @param string|null $language name of the language to set, null for the configured language
      *
-     * @return array|bool the \Arr::delete result, success boolean or array of success booleans
+     * @return array|bool the Arr::delete result, success boolean or array of success booleans
      */
     public static function delete(string $item, ?string $group = null, ?string $language = null)
     {
@@ -258,7 +203,7 @@ class Lang
 
         ($language === null) and $language = static::get_lang();
 
-        return isset(static::$lines[$language]) ? \Arr::delete(static::$lines[$language], $item) : false;
+        return isset(static::$lines[$language]) ? Arr::delete(static::$lines[$language], $item) : false;
     }
 
     /**
@@ -275,7 +220,7 @@ class Lang
         if ( ! empty($language) and $language != static::get_lang())
         {
             // set it
-            \Config::set('language', $language);
+            Config::set('language', $language);
 
             // do we need to reload?
             if ($reload)

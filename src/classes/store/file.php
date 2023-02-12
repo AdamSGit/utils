@@ -3,18 +3,22 @@
  * Set of php utils forked from Fuelphp framework
  */
 
-namespace Velocite\Config;
+namespace Velocite\Store;
 
 use Velocite\Arr;
 use Velocite\Finder;
-use Velocite\ConfigException;
+use Velocite\StoreException;
 
 /**
- * A base Config File class for File based configs.
+ * A base Store File class for File based stores.
  */
-abstract class File implements Model
+abstract class File implements StoreInterface
 {
+    use Vars;
+
     protected $file;
+
+    protected $location;
 
     protected $vars = [];
 
@@ -24,11 +28,13 @@ abstract class File implements Model
      * @param string $file Config file name
      * @param array  $vars Variables to parse in the file
      */
-    public function __construct(?string $file = null, array $vars = [])
+    public function __construct(string|array $location, ?string $file = null, array $vars = [])
     {
-        $this->file = $file;
+        $this->location = is_array($location) ? $location : [$location];
+        $this->file     = $file;
+        $this->vars     = $vars;
 
-        $this->vars = $vars;
+        // Todo strpos check extension and remove it
     }
 
     /**
@@ -42,16 +48,14 @@ abstract class File implements Model
     public function load(bool $overwrite = false, bool $cache = true) : array
     {
         $paths  = $this->find_file($cache);
-        $config = [];
+        $store = [];
 
         foreach ($paths as $path)
         {
-            $config = $overwrite ?
-                array_merge($config, $this->load_file($path)) :
-                Arr::merge($config, $this->load_file($path));
+            $store = array_merge($store, $this->load_file($path));
         }
 
-        return $config;
+        return $store;
     }
 
     /**
@@ -141,81 +145,26 @@ abstract class File implements Model
     }
 
     /**
-     * Parses a string using all of the previously set variables.  Allows you to
-     * use something like %APPPATH% in non-PHP files.
-     *
-     * @param string $string String to parse
-     *
-     * @return string
-     */
-    protected function parse_vars(string $string) : string
-    {
-        foreach ($this->vars as $var => $val)
-        {
-            $string = str_replace("%{$var}%", $val, $string);
-        }
-
-        return $string;
-    }
-
-    /**
-     * Replaces FuelPHP's path constants to their string counterparts.
-     *
-     * @param array $array array to be prepped
-     *
-     * @return void
-     */
-    protected function prep_vars(array &$array) : void
-    {
-        static $replacements;
-
-        if ( ! isset($replacements))
-        {
-            foreach ($this->vars as $i => $v)
-            {
-                $replacements['#^(' . preg_quote($v) . '){1}(.*)?#'] = '%' . $i . '%$2';
-            }
-        }
-
-        foreach ($array as $i => $value)
-        {
-            if (is_string($value))
-            {
-                $array[$i] = preg_replace(array_keys($replacements), array_values($replacements), $value);
-            }
-            elseif (is_array($value))
-            {
-                $this->prep_vars($array[$i]);
-            }
-        }
-    }
-
-    /**
      * Finds the given config files
      *
      * @param bool $cache Whether to cache this path or not
      *
-     * @throws ConfigException
+     * @throws StoreException
      *
      * @return array
      */
     protected function find_file(bool $cache = true) : array
     {
-        if (($this->file[0] === '/' or (isset($this->file[1]) and $this->file[1] === ':')) and is_file($this->file))
+        $paths = [];
+
+        foreach($this->location as $location)
         {
-            $paths = [$this->file];
-        }
-        else
-        {
-            $paths = array_merge(
-                Finder::search('config/' . VELOCITE_ENV, $this->file, $this->ext, true, $cache),
-                Finder::search('config', $this->file, $this->ext, true, $cache)
-            );
+            $paths = Arr::merge($paths, Finder::search($location, $this->file, $this->ext, true, $cache));
         }
 
         if (empty($paths))
         {
-            throw new ConfigException(sprintf('File "%s" does not exist.', $this->file));
+            throw new StoreException(sprintf('File "%s" does not exist.', $this->file));
         }
 
         return array_reverse($paths);

@@ -1,24 +1,14 @@
 <?php
 /**
- * Fuel is a fast, lightweight, community driven PHP 5.4+ framework.
- *
- * @package    Fuel
- *
- * @version    1.9-dev
- *
- * @author     Fuel Development Team
- * @license    MIT License
- * @copyright  2010 - 2019 Fuel Development Team
- *
- * @link       https://fuelphp.com
+ * Set of php utils forked from Fuelphp framework
  */
 
-namespace Fuel\Core;
+namespace Velocite\Store;
 
 /**
  * Yaml Config file parser
  */
-class Config_Yml extends \Config_File
+class Yml extends File
 {
     /**
      * @var string the extension used by this yaml file parser
@@ -48,13 +38,8 @@ class Config_Yml extends \Config_File
      */
     protected function export_format(array $contents) : string
     {
-        if ( ! function_exists('spyc_load'))
-        {
-            import('spyc/spyc', 'vendor');
-        }
-
         $this->prep_vars($contents);
 
-        return \Spyc::YAMLDump($contents);
+        return Format::forge($contents)->to_yaml();
     }
 }

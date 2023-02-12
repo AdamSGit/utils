@@ -3,8 +3,6 @@
  * Set of php utils forked from Fuelphp framework
  */
 
-namespace Velocite;
-
-class LangException extends Exception
-{
-}
+return array(
+	'hello' => 'Hello there :name!',
+);

@@ -90,19 +90,19 @@ class Inflector
      */
     public static function load_rules() : void
     {
-        \Lang::load('inflector', true, false, true);
+        Lang::load('inflector', true, false, true);
 
-        if ($rules = \Lang::get('inflector.uncountable_words', []))
+        if ($rules = Lang::get('inflector.uncountable_words', []))
         {
             static::$uncountable_words = $rules;
         }
 
-        if ($rules = \Lang::get('inflector.singular_rules', []))
+        if ($rules = Lang::get('inflector.singular_rules', []))
         {
             static::$singular_rules = $rules;
         }
 
-        if ($rules = \Lang::get('inflector.plural_rules', []))
+        if ($rules = Lang::get('inflector.plural_rules', []))
         {
             static::$plural_rules = $rules;
         }

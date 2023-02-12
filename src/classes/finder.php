@@ -311,29 +311,11 @@ class Finder
     {
         $found = $multiple ? [] : false;
 
-        // absolute path requested?
-        if ($file[0] === '/' or substr($file, 1, 2) === ':\\')
-        {
-            // if the base file does not exist, stick the extension to the back of it
-            if ( ! is_file($file))
-            {
-                $file .= $ext;
-            }
-
-            if ( ! is_file($file))
-            {
-                // at this point, found would be either empty array or false
-                return $found;
-            }
-
-            return $multiple ? [$file] : $file;
-        }
-
         // determine the cache prefix
         if ($multiple)
         {
             // make sure cache is not used if the loaded package and module list is changed
-            $cachekey = '';
+            $cachekey = $file;
             class_exists('Module', false) and $cachekey  .= implode('|', \Module::loaded());
             $cachekey                                    .= '|';
             class_exists('Package', false) and $cachekey .= implode('|', \Package::loaded());
@@ -344,42 +326,16 @@ class Finder
             $cache_id = 'S.';
         }
 
-        $paths = [];
-
-        // If a filename contains a :: then it is trying to be found in a namespace.
-        // This is sometimes used to load a view from a non-loaded module.
-        if ($pos = strripos($file, '::'))
-        {
-            // get the namespace path
-            if ($path = \Autoloader::namespace_path('\\' . ucfirst(substr($file, 0, $pos))))
-            {
-                $cache_id .= substr($file, 0, $pos);
-
-                // and strip the classes directory as we need the module root
-                $paths = [substr($path, 0, -8)];
-
-                // strip the namespace from the filename
-                $file = substr($file, $pos + 2);
-            }
-        }
-        else
-        {
-            $paths = $this->paths;
-
-            // get extra information of the active request
-            if (class_exists('Request', false) and ($request = \Request::active()))
-            {
-                $request->module and $cache_id .= $request->module;
-                $paths = array_merge($request->get_paths(), $paths);
-            }
-        }
+        $paths = $this->paths;
 
         // Merge in the flash paths then reset the flash paths
         $paths = array_merge($this->flash_paths, $paths);
-        $this->clear_flash();
 
+        $this->clear_flash();
         $file = $this->prep_path($dir) . $file . $ext;
 
+        $cache_id .= $dir . $file . $ext;
+        
         if ($cache and $cached_path = $this->from_cache($cache_id))
         {
             return $cached_path;

@@ -26,7 +26,7 @@
     </logging>
     <testsuites>
         <testsuite name="utils">
-            <file suffix=".php">./src/tests/arr.php</file>
+            <file>./src/tests/arr.php</file>
         </testsuite>
     </testsuites>
 </phpunit>

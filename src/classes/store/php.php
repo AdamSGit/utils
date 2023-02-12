@@ -3,10 +3,10 @@
  * Set of php utils forked from Fuelphp framework
  */
 
-namespace Velocite\Config;
+namespace Velocite\Store;
 
 /**
- * PHP Config file parser
+ * PHP store file parser
  */
 class Php extends File
 {
@@ -16,17 +16,12 @@ class Php extends File
     protected static $uses_opcache = false;
 
     /**
-     * @var bool whether or not APC is in use
-     */
-    protected static $uses_apc = false;
-
-    /**
      * @var bool whether or not we need to flush the opcode cache after a save
      */
     protected static $flush_needed = false;
 
     /**
-     * @var string the extension used by this config file parser
+     * @var string the extension used by this store file parser
      */
     protected $ext = '.php';
 
@@ -38,17 +33,14 @@ class Php extends File
         // do we have Opcache active?
         static::$uses_opcache = function_exists('opcache_invalidate');
 
-        // do we have APC active?
-        static::$uses_apc = function_exists('apc_compile_file');
-
         // determine if we have an opcode cache active
-        static::$flush_needed = static::$uses_opcache or static::$uses_apc;
+        static::$flush_needed = static::$uses_opcache;
     }
 
     /**
      * Formats the output and saved it to disk.
      *
-     * @param $contents $contents    config array to save
+     * @param $contents $contents    store array to save
      *
      * @return bool \File::update result
      */
@@ -74,7 +66,6 @@ class Php extends File
 
             // flush the opcode caches that are active
             static::$uses_opcache and opcache_invalidate($file, true);
-            static::$uses_apc     and apc_compile_file($file);
         }
 
         return $return;
@@ -93,11 +84,11 @@ class Php extends File
     }
 
     /**
-     * Returns the formatted config file contents.
+     * Returns the formatted store file contents.
      *
-     * @param array $contents config array
+     * @param array $contents store array
      *
-     * @return string formatted config file contents
+     * @return string formatted store file contents
      */
     protected function export_format(array $contents) : string
     {

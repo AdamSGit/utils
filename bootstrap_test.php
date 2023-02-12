@@ -1,12 +1,8 @@
 <?php
 /**
- * Bootstrap velocite package
+ * Bootstrap velocite package for unit testing
  */
 
-// Environment
-! defined('VELOCITE_ENV') and define('VELOCITE_ENV', 'test');
+require 'vendor/autoload.php';
 
-// Make sure app path is defined
-! defined ('APPPATH') and define('APPPATH', __DIR__);
-
-include './bootstrap.php';
+Velocite\Velocite::init(['app_path' => realpath(__DIR__ . '/src/tests/_app')]);

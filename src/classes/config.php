@@ -5,9 +5,8 @@
 
 namespace Velocite;
 
-class ConfigException extends \Exception
-{
-}
+use Velocite\Exception\StoreException;
+use Velocite\Exception\ConfigException;
 
 /**
  * Config class
@@ -41,13 +40,10 @@ class Config
      *
      * @return array the (loaded) config array
      */
-    public static function load($file, $group = null, bool $reload = false, bool $overwrite = false) : ?array
+    public static function load(string $file, $group = null, bool $reload = false, bool $overwrite = false) : ?array
     {
         // storage for the config
         $config = [];
-
-        // Config_Instance class
-        $class = null;
 
         // name of the config group
         $name = $group === true ? $file : ($group === null ? null : $group);
@@ -56,106 +52,32 @@ class Config
         $cache = ($group !== false);
 
         // process according to input type
-        if ( ! empty($file))
+        if ( empty($file) )
         {
-            // we've got a config filename
-            if (is_string($file))
-            {
-                // if we have this config in cache, load it
-                if ( ! $reload and
-                    array_key_exists($file, static::$loaded_files))
-                {
-                    if ($group !== false and $name !== null and isset(static::$items[$name]))
-                    {
-                        // fetch the cached config
-                        $config = static::$items[$name];
-                    }
-                    else
-                    {
-                        // no config fetched
-                        $config = null;
-                    }
-
-                    // we don't want to cache this config later!
-                    $cache = false;
-                }
-
-                // if not, construct a Config instance and load it
-                else
-                {
-                    $info = pathinfo($file);
-                    $type = 'php';
-
-                    if (isset($info['extension']))
-                    {
-                        $type = $info['extension'];
-                        // Keep extension when it's an absolute path, because the finder won't add it
-                        if ($file[0] !== '/' and $file[1] !== ':')
-                        {
-                            $file = substr($file, 0, -(strlen($type) + 1));
-                        }
-                    }
-
-                    $class = '\\Velocite\\Config\\' . ucfirst($type);
-
-                    if (class_exists($class))
-                    {
-                        // Call init method if the class has some
-                        method_exists($class, '_init') and $class::_init();
-
-                        static::$loaded_files[$file] = true;
-                        $class                       = new $class($file);
-                    }
-                    else
-                    {
-                        throw new ConfigException(sprintf('Invalid config type "%s".', $type));
-                    }
-                }
-            }
-
-            // we've got an array of config data
-            elseif (is_array($file))
-            {
-                $config = $file;
-            }
-
-            // we've got an already created Config instance class
-            elseif ($file instanceof Config_Interface)
-            {
-                $class = $file;
-            }
-
-            // don't know what we got, bail out
-            else
-            {
-                throw new ConfigException(sprintf('Invalid config file argument'));
-            }
-
-            // if we have a Config instance class?
-            if (is_object($class))
-            {
-                // then load its config
-                try
-                {
-                    $config = $class->load($overwrite, ! $reload);
-                }
-                catch (ConfigException $e)
-                {
-                    $config = null;
-                }
-
-                // and update the group if needed
-                if ($group === true)
-                {
-                    $name = $class->group();
-                }
-            }
+            throw new ConfigException("Tried to load empty config");
         }
 
-        // no arguments?
-        else
+        // if we have this config in cache, load it
+        if ( ! $reload and array_key_exists($file, static::$loaded_files) )
         {
-            throw new ConfigException(sprintf('No valid config file argument given'));
+            if ( $name !== null and isset(static::$items[$name]) )
+            {
+                // fetch the cached config
+                return static::$items[$name];
+            }
+
+            return null;
+        }
+
+        static::$loaded_files[$file] = true;
+
+        try
+        {
+            $config = Store::load( 'config', $file, $cache );
+        }
+        catch( StoreException $e )
+        {
+            throw new ConfigException(sprintf('Config file "%s" not found.', $file));
         }
 
         // do we have a valid config loaded and do we need to cache it?
@@ -200,7 +122,7 @@ class Config
     }
 
     /**
-     * Save a config array to disc.
+     * Save a config array in store driver.
      *
      * @param string       $file   desired file name
      * @param string|array $config master config array key or config array
@@ -213,36 +135,15 @@ class Config
     {
         if ( ! is_array($config))
         {
-            if ( ! isset(static::$items[$config]))
+            if ( ! isset(static::$items[$config]) )
             {
                 return false;
             }
+
             $config = static::$items[$config];
         }
 
-        $info = pathinfo($file);
-        $type = 'php';
-
-        if (isset($info['extension']))
-        {
-            $type = $info['extension'];
-            // Keep extension when it's an absolute path, because the finder won't add it
-            if ($file[0] !== '/' and $file[1] !== ':')
-            {
-                $file = substr($file, 0, -(strlen($type) + 1));
-            }
-        }
-
-        $class = '\\Config_' . ucfirst($type);
-
-        if ( ! class_exists($class))
-        {
-            throw new ConfigException(sprintf('Invalid config type "%s".', $type));
-        }
-
-        $driver = new $class($file);
-
-        return $driver->save($config);
+        return Store::save($file, $config);
     }
 
     /**
@@ -255,27 +156,19 @@ class Config
      */
     public static function get(string $item, $default = null) : mixed
     {
-        if (array_key_exists($item, static::$items))
+        if ( array_key_exists($item, static::$itemcache) )
         {
-            return static::$items[$item];
+            return static::$itemcache[$item];
         }
-        elseif ( ! array_key_exists($item, static::$itemcache))
+
+        $val = Arr::get(static::$items, $item);
+
+        if ($val and $val !== $default)
         {
-            // cook up something unique
-            $miss = new \stdClass();
-
-            $val = Arr::get(static::$items, $item, $miss);
-
-            // so we can detect a miss here...
-            if ($val === $miss)
-            {
-                return $default;
-            }
-
             static::$itemcache[$item] = $val;
         }
 
-        return Str::value(static::$itemcache[$item]);
+        return Str::value($val);
     }
 
     /**

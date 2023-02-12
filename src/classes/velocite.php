@@ -30,20 +30,50 @@ if ( ! defined('MBSTRING'))
  */
 final class Velocite
 {
+    /**
+     * @var string constant used for when in testing mode
+     */
+    public const TEST = 'test';
+
+    /**
+     * @var string constant used for when in development
+     */
+    public const DEVELOPMENT = 'development';
+
+    /**
+     * @var string constant used for when in production
+     */
+    public const PRODUCTION = 'production';
+
+    /**
+     * @var string constant used for when testing the app in a staging env
+     */
+    public const STAGING = 'staging';
+
     public static function init ($config) : void
     {
-        if ( ! defined ('VELOCITE_APPPATH') and empty($config['app_path']) )
+        if ( ! defined ('APPPATH') and empty($config['app_path']) )
         {
             throw new Exception('app path need to be provided when initialising Velocite');
         }
 
         // Define app path
-        ! defined ('VELOCITE_APPPATH') and define('VELOCITE_APPPATH', $config['app_path']);
+        ! defined ('APPPATH') and define('APPPATH', $config['app_path']);
 
         // Define env
         ! defined ('VELOCITE_ENV') and define('VELOCITE_ENV', $config['env'] ?? 'development');
 
+        set_exception_handler(static function ($e) {
+            return Errorhandler::exception_handler($e);
+        });
+
+        set_error_handler(static function ($severity, $message, $filepath, $line) {
+            return Errorhandler::error_handler($severity, $message, $filepath, $line);
+        });
+
         // Init package classes
+        Config::load('config');
+        Lang::_init();
         Finder::_init();
         Inflector::_init();
     }

@@ -14,13 +14,13 @@ final class Arr
      * Gets a dot-notated key from an array, with a default value if it does
      * not exist.
      *
-     * @param array        $array   The search array
-     * @param string|array $key     The dot-notated key or array of keys
-     * @param mixed       $default The default value
+     * @param array         $array   The search array
+     * @param mixed         $key     The dot-notated key or array of keys
+     * @param mixed         $default The default value
      *
      * @return mixed
      */
-    public static function get(array $array, string|array $key, mixed $default = null) : mixed
+    public static function get(array $array, mixed $key, mixed $default = null) : mixed
     {
         if ( ! is_array($array) and ! $array instanceof \ArrayAccess)
         {
