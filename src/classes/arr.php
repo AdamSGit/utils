@@ -628,11 +628,11 @@ final class Arr
      *
      * @return bool false when array shorter then $pos, otherwise true
      */
-    public static function insert(array &$original, $value, int $pos) : bool
+    public static function insert(array &$original, mixed $value, int $pos) : bool
     {
         if (count($original) < abs($pos))
         {
-            \Errorhandler::notice('Position larger than number of elements in array in which to insert.');
+            Errorhandler::notice('Position larger than number of elements in array in which to insert.');
 
             return false;
         }
@@ -675,13 +675,13 @@ final class Arr
      *
      * @return bool false when key isn't found in the array, otherwise true
      */
-    public static function insert_before_key(array &$original, $value, $key, bool $is_assoc = false) : bool
+    public static function insert_before_key(array &$original, mixed $value, $key, bool $is_assoc = false) : bool
     {
         $pos = array_search($key, array_keys($original));
 
         if ($pos === false)
         {
-            \Errorhandler::notice('Unknown key before which to insert the new value into the array.');
+            Errorhandler::notice('Unknown key before which to insert the new value into the array.');
 
             return false;
         }
@@ -700,13 +700,13 @@ final class Arr
      *
      * @return bool false when key isn't found in the array, otherwise true
      */
-    public static function insert_after_key(array &$original, $value, $key, bool $is_assoc = false) : bool
+    public static function insert_after_key(array &$original, mixed $value, $key, bool $is_assoc = false) : bool
     {
         $pos = array_search($key, array_keys($original));
 
         if ($pos === false)
         {
-            \Errorhandler::notice('Unknown key after which to insert the new value into the array.');
+            Errorhandler::notice('Unknown key after which to insert the new value into the array.');
 
             return false;
         }
@@ -724,13 +724,13 @@ final class Arr
      *
      * @return bool false when value isn't found in the array, otherwise true
      */
-    public static function insert_after_value(array &$original, $value, $search, bool $is_assoc = false) : bool
+    public static function insert_after_value(array &$original, mixed $value, $search, bool $is_assoc = false) : bool
     {
         $key = array_search($search, $original);
 
         if ($key === false)
         {
-            \Errorhandler::notice('Unknown value after which to insert the new value into the array.');
+            Errorhandler::notice('Unknown value after which to insert the new value into the array.');
 
             return false;
         }
@@ -748,13 +748,13 @@ final class Arr
      *
      * @return bool false when value isn't found in the array, otherwise true
      */
-    public static function insert_before_value(array &$original, $value, $search, bool $is_assoc = false) : bool
+    public static function insert_before_value(array &$original, mixed $value, $search, bool $is_assoc = false) : bool
     {
         $key = array_search($search, $original);
 
         if ($key === false)
         {
-            \Errorhandler::notice('Unknown value before which to insert the new value into the array.');
+            Errorhandler::notice('Unknown value before which to insert the new value into the array.');
 
             return false;
         }
@@ -882,12 +882,12 @@ final class Arr
      * Replaces key names in an array by names in $replace
      *
      * @param array        $source  the array containing the key/value combinations
-     * @param array|string $replace key to replace or array containing the replacement keys
+     * @param mixed $replace key to replace or array containing the replacement keys
      * @param string       $new_key the replacement key
      *
      * @return array the array with the new keys
      */
-    public static function replace_key(array $source, $replace, ?string $new_key = null) : array
+    public static function replace_key(array $source, mixed $replace, ?string $new_key = null) : array
     {
         if (is_string($replace))
         {
@@ -1013,10 +1013,10 @@ final class Arr
      * Will overwrite if the value exists.
      *
      * @param array        $arr   the array to prepend to
-     * @param string|array $key   the key or array of keys and values
+     * @param mixed $key   the key or array of keys and values
      * @param mixed        $value the value to prepend
      */
-    public static function prepend(array &$arr, $key, $value = null) : void
+    public static function prepend(array &$arr, mixed $key, $value = null) : void
     {
         $arr = (is_array($key) ? $key : [$key => $value]) + $arr;
     }
@@ -1074,14 +1074,14 @@ final class Arr
      *
      * @param array  $array     The search array
      * @param mixed  $value     The searched value
-     * @param string $default   The default value
+     * @param mixed $default   The default value
      * @param bool   $recursive Whether to get keys recursive
      * @param string $delimiter The delimiter, when $recursive is true
      * @param bool   $strict    If true, do a strict key comparison
      *
      * @return mixed
      */
-    public static function search(array $array, $value, ?string $default = null, bool $recursive = true, string $delimiter = '.', bool $strict = false) : mixed
+    public static function search(array $array, $value, mixed $default = null, bool $recursive = true, string $delimiter = '.', bool $strict = false) : mixed
     {
         if ( ! is_array($array) and ! $array instanceof \ArrayAccess)
         {
@@ -1195,13 +1195,13 @@ final class Arr
      * Get the previous value or key from an array using the current array key
      *
      * @param array  $array     the array containing the values
-     * @param string $key       key of the current entry to use as reference
+     * @param mixed $key       key of the current entry to use as reference
      * @param bool   $get_value if true, return the previous value instead of the previous key
      * @param bool   $strict    if true, do a strict key comparison
      *
      * @return mixed the value in the array, null if there is no previous value, or false if the key doesn't exist
      */
-    public static function previous_by_key(array $array, string $key, bool $get_value = false, bool $strict = false) : mixed
+    public static function previous_by_key(array $array, mixed $key, bool $get_value = false, bool $strict = false) : mixed
     {
         if ( ! is_array($array) and ! $array instanceof \ArrayAccess)
         {
@@ -1233,13 +1233,13 @@ final class Arr
      * Get the next value or key from an array using the current array key
      *
      * @param array  $array     the array containing the values
-     * @param string $key       key of the current entry to use as reference
+     * @param mixed $key       key of the current entry to use as reference
      * @param bool   $get_value if true, return the next value instead of the next key
      * @param bool   $strict    if true, do a strict key comparison
      *
      * @return mixed the value in the array, null if there is no next value, or false if the key doesn't exist
      */
-    public static function next_by_key(array $array, string $key, bool $get_value = false, bool $strict = false) : mixed
+    public static function next_by_key(array $array, mixed $key, bool $get_value = false, bool $strict = false) : mixed
     {
         if ( ! is_array($array) and ! $array instanceof \ArrayAccess)
         {
@@ -1271,13 +1271,13 @@ final class Arr
      * Get the previous value or key from an array using the current array value
      *
      * @param array  $array     the array containing the values
-     * @param string $value     value of the current entry to use as reference
+     * @param mixed $value     value of the current entry to use as reference
      * @param bool   $get_value if true, return the previous value instead of the previous key
      * @param bool   $strict    if true, do a strict key comparison
      *
      * @return mixed the value in the array, null if there is no previous value, or false if the key doesn't exist
      */
-    public static function previous_by_value(array $array, string $value, bool $get_value = true, bool $strict = false) : mixed
+    public static function previous_by_value(array $array, mixed $value, bool $get_value = true, bool $strict = false) : mixed
     {
         if ( ! is_array($array) and ! $array instanceof \ArrayAccess)
         {
@@ -1309,13 +1309,13 @@ final class Arr
      * Get the next value or key from an array using the current array value
      *
      * @param array  $array     the array containing the values
-     * @param string $value     value of the current entry to use as reference
+     * @param mixed $value     value of the current entry to use as reference
      * @param bool   $get_value if true, return the next value instead of the next key
      * @param bool   $strict    if true, do a strict key comparison
      *
      * @return mixed the value in the array, null if there is no next value, or false if the key doesn't exist
      */
-    public static function next_by_value(array $array, string $value, bool $get_value = true, bool $strict = false) : mixed
+    public static function next_by_value(array $array, mixed $value, bool $get_value = true, bool $strict = false) : mixed
     {
         if ( ! is_array($array) and ! $array instanceof \ArrayAccess)
         {

@@ -99,6 +99,22 @@ return [
          */
 
         'notices' => true,
+
+        /*
+         * ---------------------------------------------------------------------
+         *  Error display format
+         * ---------------------------------------------------------------------
+         *
+         *  When displaying error, which format should be used
+         *  Possibles values are
+         *  - string (don't include backtrace)
+         *  - print_r
+         *  - json
+         *  - xml
+         *
+         */
+
+        'display_format' => 'string',
     ],
 
     /*
@@ -160,16 +176,16 @@ return [
      *
      *  Can be set to any of the following:
      *
-     *      Fuel::L_NONE
-     *      Fuel::L_ERROR
-     *      Fuel::L_WARNING
-     *      Fuel::L_DEBUG
-     *      Fuel::L_INFO
-     *      Fuel::L_ALL
+     *      Velocity::L_NONE
+     *      Velocity::L_ERROR
+     *      Velocity::L_WARNING
+     *      Velocity::L_DEBUG
+     *      Velocity::L_INFO
+     *      Velocity::L_ALL
      *
      */
 
-    // 'log_threshold' => \Fuel::L_WARNING,
+    // 'log_threshold' => Velocity::L_ALL,
 
     /*
      * -------------------------------------------------------------------------
@@ -195,7 +211,7 @@ return [
      *
      */
 
-    'cli_backtrace' => false,
+    'cli_backtrace' => true,
 
     /*
      * -------------------------------------------------------------------------
@@ -307,26 +323,6 @@ return [
          */
 
         'clean_paths' => [],
-    ],
-
-    /*
-     * -------------------------------------------------------------------------
-     *  Validation
-     * -------------------------------------------------------------------------
-     */
-
-    'validation' => [
-        /*
-         * ---------------------------------------------------------------------
-         *  Compatibility
-         * ---------------------------------------------------------------------
-         *
-         *  Whether falling back to global when a value is not found
-         *  in input array.
-         *
-         */
-
-        'global_input_fallback' => true,
     ],
 
     /*

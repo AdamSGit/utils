@@ -88,7 +88,7 @@ class Lang
         $lang = [];
 
         static::$loaded_files[$language . '/' . $file] = func_get_args();
-        
+
         try
         {
             $lang = Store::load( "lang/{$language}", $file );
@@ -164,7 +164,7 @@ class Lang
         ($language === null) and $language = static::get_lang();
         $value                             = Str::value(Arr::get(static::$lines[$language], $line, $default));
 
-        return $value ? Str::tr($value, $params) : $default;
+        return $value ? (is_string($value) ? Str::tr($value, $params) : $value) : $default;
     }
 
     /**

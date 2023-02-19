@@ -576,7 +576,7 @@ class Test_Arr extends \PHPUnit\Framework\TestCase
         $this->assertEquals(['bar' => 'yay'], $output);
     }
 
-    public function sort_provider()
+    public static function sort_provider()
     {
         return [
             [
@@ -671,14 +671,13 @@ class Test_Arr extends \PHPUnit\Framework\TestCase
      *
      * @dataProvider sort_provider
      *
-     * @expectedException InvalidArgumentException
-     *
-     * @param mixed $data
-     * @param mixed $expected
+     * @param array $data
+     * @param array $expected
      */
-    public function test_sort_invalid_direction($data, $expected) : void
+    public function test_sort_invalid_direction(array $data, array $expected) : void
     {
-        $this->assertEquals($expected, Arr::sort($data, 'info.pet.type', 'desc'));
+        $this->expectException('InvalidArgumentException');
+        Arr::sort($data, 'info.pet.type', 'notavaliddirection');
     }
 
     public function test_sort_empty() : void
@@ -728,11 +727,10 @@ class Test_Arr extends \PHPUnit\Framework\TestCase
      * Tests Arr::to_assoc()
      *
      * @test
-     *
-     * @expectedException BadMethodCallException
      */
     public function test_to_assoc_with_odd_number_of_elements() : void
     {
+        $this->expectException('BadMethodCallException');
         $arr = ['foo', 'bar', 'baz'];
         Arr::to_assoc($arr);
     }
@@ -891,11 +889,11 @@ class Test_Arr extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * Tests Arr::previous_by_key()
+     * Tests Arr::previous_by_key_not_found()
      *
      * @test
      */
-    public function test_previous_by_key() : void
+    public function previous_by_key_not_found() : void
     {
         // our test array
         $arr = [2 => 'A', 4 => 'B', 6 => 'C'];
@@ -904,21 +902,65 @@ class Test_Arr extends \PHPUnit\Framework\TestCase
         $expected = false;
         $test     = Arr::previous_by_key($arr, 1);
         $this->assertTrue($expected === $test);
+    }
+
+    /**
+     * Tests Arr::previous_by_key_no_previous()
+     *
+     * @test
+     */
+    public function previous_by_key_no_previous() : void
+    {
+        // our test array
+        $arr = [2 => 'A', 4 => 'B', 6 => 'C'];
 
         // test: no previous key
         $expected = null;
         $test     = Arr::previous_by_key($arr, 2);
         $this->assertTrue($expected === $test);
+    }
+
+    /**
+     * Tests Arr::previous_by_key_strict()
+     *
+     * @test
+     */
+    public function previous_by_key_strict() : void
+    {
+        // our test array
+        $arr = [2 => 'A', 4 => 'B', 6 => 'C'];
 
         // test: strict key comparison
         $expected = false;
         $test     = Arr::previous_by_key($arr, '2', false, true);
         $this->assertTrue($expected === $test);
+    }
+
+    /**
+     * Tests Arr::previous_by_key_get_previous()
+     *
+     * @test
+     */
+    public function previous_by_key_get_previous() : void
+    {
+        // our test array
+        $arr = [2 => 'A', 4 => 'B', 6 => 'C'];
 
         // test: get previous key
         $expected = 2;
         $test     = Arr::previous_by_key($arr, 4);
         $this->assertTrue($expected === $test);
+    }
+
+    /**
+     * Tests Arr::test_previous_by_key_previous_key()
+     *
+     * @test
+     */
+    public function test_previous_by_key_previous_key() : void
+    {
+        // our test array
+        $arr = [2 => 'A', 4 => 'B', 6 => 'C'];
 
         // test: get previous value
         $expected = 'A';
@@ -927,11 +969,11 @@ class Test_Arr extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * Tests Arr::next_by_key()
+     * Tests Arr::test_next_by_key_not_found()
      *
      * @test
      */
-    public function test_next_by_key() : void
+    public function test_next_by_key_not_found() : void
     {
         // our test array
         $arr = [2 => 'A', 4 => 'B', 6 => 'C'];
@@ -940,21 +982,65 @@ class Test_Arr extends \PHPUnit\Framework\TestCase
         $expected = false;
         $test     = Arr::next_by_key($arr, 1);
         $this->assertTrue($expected === $test);
+    }
+
+    /**
+     * Tests Arr::test_next_by_key_no_next_key()
+     *
+     * @test
+     */
+    public function test_next_by_key_no_next_key() : void
+    {
+        // our test array
+        $arr = [2 => 'A', 4 => 'B', 6 => 'C'];
 
         // test: no next key
         $expected = null;
         $test     = Arr::next_by_key($arr, 6);
         $this->assertTrue($expected === $test);
+    }
+
+    /**
+     * Tests Arr::test_next_by_key_strict_comp()
+     *
+     * @test
+     */
+    public function test_next_by_key_strict_comp() : void
+    {
+        // our test array
+        $arr = [2 => 'A', 4 => 'B', 6 => 'C'];
 
         // test: strict key comparison
         $expected = false;
         $test     = Arr::next_by_key($arr, '6', false, true);
         $this->assertTrue($expected === $test);
+    }
+
+    /**
+     * Tests Arr::test_next_by_key_get_next_key_value()
+     *
+     * @test
+     */
+    public function test_next_by_key_get_next_key_value() : void
+    {
+        // our test array
+        $arr = [2 => 'A', 4 => 'B', 6 => 'C'];
 
         // test: get next key
         $expected = 6;
         $test     = Arr::next_by_key($arr, 4);
         $this->assertTrue($expected === $test);
+    }
+
+    /**
+     * Tests Arr::test_next_by_key_get_next_key()
+     *
+     * @test
+     */
+    public function test_next_by_key_get_next_key() : void
+    {
+        // our test array
+        $arr = [2 => 'A', 4 => 'B', 6 => 'C'];
 
         // test: get next value
         $expected = 'C';
@@ -963,11 +1049,11 @@ class Test_Arr extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * Tests Arr::previous_by_value()
+     * Tests Arr::test_previous_by_value_not_found()
      *
      * @test
      */
-    public function test_previous_by_value() : void
+    public function test_previous_by_value_not_found() : void
     {
         // our test array
         $arr = [2 => 'A', 4 => '2', 6 => 'C'];
@@ -976,21 +1062,65 @@ class Test_Arr extends \PHPUnit\Framework\TestCase
         $expected = false;
         $test     = Arr::previous_by_value($arr, 'Z');
         $this->assertTrue($expected === $test);
+    }
+
+    /**
+     * Tests Arr::test_previous_by_value_no_previous()
+     *
+     * @test
+     */
+    public function test_previous_by_value_no_previous() : void
+    {
+        // our test array
+        $arr = [2 => 'A', 4 => '2', 6 => 'C'];
 
         // test: no previous value
         $expected = null;
         $test     = Arr::previous_by_value($arr, 'A');
         $this->assertTrue($expected === $test);
+    }
+
+    /**
+     * Tests Arr::test_previous_by_value_strict()
+     *
+     * @test
+     */
+    public function test_previous_by_value_strict() : void
+    {
+        // our test array
+        $arr = [2 => 'A', 4 => '2', 6 => 'C'];
 
         // test: strict value comparison
         $expected = false;
         $test     = Arr::previous_by_value($arr, 2, true, true);
         $this->assertTrue($expected === $test);
+    }
+
+    /**
+     * Tests Arr::test_previous_by_value_get_previous()
+     *
+     * @test
+     */
+    public function test_previous_by_value_get_previous() : void
+    {
+        // our test array
+        $arr = [2 => 'A', 4 => '2', 6 => 'C'];
 
         // test: get previous value
         $expected = 'A';
         $test     = Arr::previous_by_value($arr, '2');
         $this->assertTrue($expected === $test);
+    }
+
+    /**
+     * Tests Arr::test_previous_by_value_get_previous_key()
+     *
+     * @test
+     */
+    public function test_previous_by_value_get_previous_key() : void
+    {
+        // our test array
+        $arr = [2 => 'A', 4 => '2', 6 => 'C'];
 
         // test: get previous key
         $expected = 4;
@@ -999,11 +1129,11 @@ class Test_Arr extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * Tests Arr::next_by_value()
+     * Tests Arr::next_by_value_not_found()
      *
      * @test
      */
-    public function test_next_by_value() : void
+    public function next_by_value_not_found() : void
     {
         // our test array
         $arr = [2 => 'A', 4 => '2', 6 => 'C'];
@@ -1012,21 +1142,65 @@ class Test_Arr extends \PHPUnit\Framework\TestCase
         $expected = false;
         $test     = Arr::next_by_value($arr, 'Z');
         $this->assertTrue($expected === $test);
+    }
+
+    /**
+     * Tests Arr::next_by_value_no_next()
+     *
+     * @test
+     */
+    public function next_by_value_no_next() : void
+    {
+        // our test array
+        $arr = [2 => 'A', 4 => '2', 6 => 'C'];
 
         // test: no next value
         $expected = null;
         $test     = Arr::next_by_value($arr, 'C');
         $this->assertTrue($expected === $test);
+    }
+
+    /**
+     * Tests Arr::next_by_value_strict()
+     *
+     * @test
+     */
+    public function next_by_value_strict() : void
+    {
+        // our test array
+        $arr = [2 => 'A', 4 => '2', 6 => 'C'];
 
         // test: strict value comparison
         $expected = false;
         $test     = Arr::next_by_value($arr, 2, true, true);
         $this->assertTrue($expected === $test);
+    }
+
+    /**
+     * Tests Arr::next_by_value_get_next()
+     *
+     * @test
+     */
+    public function next_by_value_get_next() : void
+    {
+        // our test array
+        $arr = [2 => 'A', 4 => '2', 6 => 'C'];
 
         // test: get next value
         $expected = 'C';
         $test     = Arr::next_by_value($arr, '2');
         $this->assertTrue($expected === $test);
+    }
+
+    /**
+     * Tests Arr::test_next_by_value_get_next()
+     *
+     * @test
+     */
+    public function test_next_by_value_get_next() : void
+    {
+        // our test array
+        $arr = [2 => 'A', 4 => '2', 6 => 'C'];
 
         // test: get next key
         $expected = 4;

@@ -9,7 +9,6 @@
     enforceTimeLimit="true"
     stopOnSkipped="true"
     beStrictAboutOutputDuringTests="true"
-    testdox="true"
 >
     <php>
         <server name="VELOCITE_ENV" value="test"/>

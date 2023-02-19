@@ -5,25 +5,7 @@
 
 namespace Velocite;
 
-// Directory sepataror shortcut
-! defined('DS') and define('DS', DIRECTORY_SEPARATOR);
-// Carriage return shortcut
-! defined('CRLF') and define('CRLF', chr(13) . chr(10));
-
-/*
- * Do we have access to mbstring?
- * We need this in order to work with UTF-8 strings
- */
-if ( ! defined('MBSTRING'))
-{
-    // we do not support mb function overloading
-    if (ini_get('mbstring.func_overload'))
-    {
-        die('Your PHP installation is configured to overload mbstring functions. This is not supported by Velocite package');
-    }
-
-    define('MBSTRING', function_exists('mb_get_info'));
-}
+require __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'bootstrap.php';
 
 /**
  * Init class of velocite package
@@ -50,6 +32,41 @@ final class Velocite
      */
     public const STAGING = 'staging';
 
+    /**
+     * @var int No logging
+     */
+    public const L_NONE = 0;
+
+    /**
+     * @var int Log everything
+     */
+    public const L_ALL = 99;
+
+    /**
+     * @var int Log debug massages and below
+     */
+    public const L_DEBUG = 100;
+
+    /**
+     * @var int Log info massages and below
+     */
+    public const L_INFO = 200;
+
+    /**
+     * @var int Log warning massages and below
+     */
+    public const L_WARNING = 300;
+
+    /**
+     * @var int Log errors only
+     */
+    public const L_ERROR = 400;
+
+    /**
+     * @var string The Velocite environment static attribute
+     */
+    public static $env = Velocite::DEVELOPMENT;
+
     public static function init ($config) : void
     {
         if ( ! defined ('APPPATH') and empty($config['app_path']) )
@@ -61,7 +78,9 @@ final class Velocite
         ! defined ('APPPATH') and define('APPPATH', $config['app_path']);
 
         // Define env
-        ! defined ('VELOCITE_ENV') and define('VELOCITE_ENV', $config['env'] ?? 'development');
+        ! defined ('VELOCITE_ENV') and define('VELOCITE_ENV', $config['env'] ?? static::DEVELOPMENT);
+
+        static::$env = VELOCITE_ENV;
 
         set_exception_handler(static function ($e) {
             return Errorhandler::exception_handler($e);
@@ -71,10 +90,57 @@ final class Velocite
             return Errorhandler::error_handler($severity, $message, $filepath, $line);
         });
 
+        if (static::is_cli())
+        {
+            Cli::_init();
+        }
+
         // Init package classes
         Config::load('config');
         Lang::_init();
         Finder::_init();
         Inflector::_init();
+    }
+
+    /**
+     * Is Velocite running on the command line?
+     *
+     * @return boolean
+     */
+    public static function is_cli() : bool
+    {
+        return defined('STDIN');
+    }
+
+    /**
+     * Cleans a file path so that it does not contain absolute file paths.
+     *
+     * @param   string  the filepath
+     * @param string $path
+     *
+     * @return string the clean path
+     */
+    public static function clean_path(string $path) : string
+    {
+        // framework default paths
+        $paths = [
+            'APPPATH/' => APPPATH,
+        ];
+
+        // storage for the search/replace strings
+        $search  = [];
+        $replace = [];
+
+        // additional paths configured than need cleaning
+        $extra = Config::get('security.clean_paths', []);
+
+        foreach ($paths + $extra as $r => $s)
+        {
+            $search[]  = rtrim($s, DS) . DS;
+            $replace[] = rtrim($r, DS) . DS;
+        }
+
+        // clean up and return it
+        return str_ireplace($search, $replace, $path);
     }
 }
