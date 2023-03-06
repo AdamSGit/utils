@@ -14,13 +14,13 @@ final class Arr
      * Gets a dot-notated key from an array, with a default value if it does
      * not exist.
      *
-     * @param array         $array   The search array
+     * @param array|object         $array   The search array
      * @param mixed         $key     The dot-notated key or array of keys
      * @param mixed         $default The default value
      *
      * @return mixed
      */
-    public static function get(array $array, mixed $key, mixed $default = null) : mixed
+    public static function get(array|object $array, mixed $key = null, mixed $default = null) : mixed
     {
         if ( ! is_array($array) and ! $array instanceof \ArrayAccess)
         {
@@ -81,12 +81,12 @@ final class Arr
      * Set an array item (dot-notated) to the value.
      *
      * @param array        $array The array to insert it into
-     * @param string|array $key   The dot-notated key to set or array of keys
+     * @param mixed $key   The dot-notated key to set or array of keys
      * @param mixed        $value The value
      *
      * @return void
      */
-    public static function set(array &$array, string|array $key, mixed $value = null) : void
+    public static function set(array &$array, mixed $key, mixed $value = null) : void
     {
         if (null === $key)
         {
@@ -101,25 +101,25 @@ final class Arr
             {
                 static::set($array, $k, $v);
             }
+
+            return;
         }
-        else
+
+        $keys = explode('.', $key);
+
+        while (count($keys) > 1)
         {
-            $keys = explode('.', $key);
+            $key = array_shift($keys);
 
-            while (count($keys) > 1)
+            if ( ! isset($array[$key]) or ! is_array($array[$key]))
             {
-                $key = array_shift($keys);
-
-                if ( ! isset($array[$key]) or ! is_array($array[$key]))
-                {
-                    $array[$key] = [];
-                }
-
-                $array =& $array[$key];
+                $array[$key] = [];
             }
 
-            $array[array_shift($keys)] = $value;
+            $array =& $array[$key];
         }
+
+        $array[array_shift($keys)] = $value;
     }
 
     /**
@@ -127,11 +127,11 @@ final class Arr
      *
      * @param array  $array collection of arrays to pluck from
      * @param string $key   key of the value to pluck
-     * @param string $index optional return array index key, true for original index
+     * @param mixed $index optional string as index key,or bool(true) for original index
      *
      * @return array array of plucked values
      */
-    public static function pluck(array $array, string $key, ?string $index = null) : array
+    public static function pluck(array $array, string $key, mixed $index = null) : array
     {
         $return   = [];
         $get_deep = strpos($key, '.') !== false;
@@ -160,12 +160,12 @@ final class Arr
     /**
      * Array_key_exists with a dot-notated key from an array.
      *
-     * @param array        $array The search array
-     * @param string|array $key   The dot-notated key or array of keys
+     * @param mixed        $array The search array
+     * @param mixed $key   The dot-notated key or array of keys
      *
      * @return mixed
      */
-    public static function key_exists(array $array, string|array $key) : mixed
+    public static function key_exists(mixed $array, mixed $key) : mixed
     {
         if ( ! is_array($array) and ! $array instanceof \ArrayAccess)
         {
@@ -204,11 +204,11 @@ final class Arr
      * Unsets dot-notated key from an array
      *
      * @param array        $array The search array
-     * @param string|array $key   The dot-notated key or array of keys
+     * @param mixed $key   The dot-notated key or array of keys
      *
      * @return mixed
      */
-    public static function delete(array &$array, string|array $key) : mixed
+    public static function delete(array &$array, mixed $key) : mixed
     {
         if (null === $key)
         {
@@ -352,11 +352,6 @@ final class Arr
      */
     public static function is_assoc(array $arr) : bool
     {
-        if ( ! is_array($arr))
-        {
-            throw new \InvalidArgumentException('The parameter must be an array.');
-        }
-
         $counter = 0;
 
         foreach ($arr as $key => $unused)
@@ -531,7 +526,7 @@ final class Arr
     {
         foreach ($array as $key => $val)
         {
-            if (preg_match('/^' . $prefix . '/', $key))
+            if (preg_match('/^' . preg_quote($prefix) . '/', $key))
             {
                 unset($array[$key]);
             }
@@ -555,12 +550,13 @@ final class Arr
 
         foreach ($array as $key => $val)
         {
-            if (preg_match('/' . $suffix . '$/', $key))
+            if (preg_match('/' . preg_quote($suffix) . '$/', $key))
             {
                 if ($remove_suffix === true)
                 {
-                    $key = preg_replace('/' . $suffix . '$/', '', $key);
+                    $key = preg_replace('/' . preg_quote($suffix) . '$/', '', $key);
                 }
+
                 $return[$key] = $val;
             }
         }
@@ -580,7 +576,7 @@ final class Arr
     {
         foreach ($array as $key => $val)
         {
-            if (preg_match('/' . $suffix . '$/', $key))
+            if (preg_match('/' . preg_quote($suffix) . '$/', $key))
             {
                 unset($array[$key]);
             }
@@ -669,13 +665,12 @@ final class Arr
      * WARNING: original array is edited by reference, only boolean success is returned
      *
      * @param array       $original the original array (by reference)
-     * @param array|mixed $value    the value(s) to insert, if you want to insert an array it needs to be in an array itself
+     * @param mixed $value    the value(s) to insert, if you want to insert an array it needs to be in an array itself
      * @param string|int  $key      the key before which to insert
-     * @param bool        $is_assoc whether the input is an associative array
      *
      * @return bool false when key isn't found in the array, otherwise true
      */
-    public static function insert_before_key(array &$original, mixed $value, $key, bool $is_assoc = false) : bool
+    public static function insert_before_key(array &$original, mixed $value, $key) : bool
     {
         $pos = array_search($key, array_keys($original));
 
@@ -686,7 +681,7 @@ final class Arr
             return false;
         }
 
-        return $is_assoc ? static::insert_assoc($original, $value, $pos) : static::insert($original, $value, $pos);
+        return static::is_assoc($original) ? static::insert_assoc($original, $value, $pos) : static::insert($original, $value, $pos);
     }
 
     /**
@@ -855,7 +850,7 @@ final class Arr
 
         $args[] = &$array;
 
-        call_fuel_func_array('array_multisort', $args);
+        call_user_func_array('array_multisort', $args);
 
         return $array;
     }
@@ -1072,7 +1067,7 @@ final class Arr
      * If $recursive is set to true, then the Arr::search()
      * function will return a delimiter-notated key using $delimiter.
      *
-     * @param array  $array     The search array
+     * @param mixed  $array     The search array
      * @param mixed  $value     The searched value
      * @param mixed $default   The default value
      * @param bool   $recursive Whether to get keys recursive
@@ -1081,7 +1076,7 @@ final class Arr
      *
      * @return mixed
      */
-    public static function search(array $array, $value, mixed $default = null, bool $recursive = true, string $delimiter = '.', bool $strict = false) : mixed
+    public static function search(mixed $array, $value, mixed $default = null, bool $recursive = true, string $delimiter = '.', bool $strict = false) : mixed
     {
         if ( ! is_array($array) and ! $array instanceof \ArrayAccess)
         {
@@ -1091,11 +1086,6 @@ final class Arr
         if ( null !== $default and ! is_int($default) and ! is_string($default))
         {
             throw new \InvalidArgumentException('Expects parameter 3 to be an string or integer or null.');
-        }
-
-        if ( ! is_string($delimiter))
-        {
-            throw new \InvalidArgumentException('Expects parameter 5 must be an string.');
         }
 
         $key = array_search($value, $array, $strict);
@@ -1125,43 +1115,14 @@ final class Arr
     }
 
     /**
-     * Returns only unique values in an array. It does not sort. First value is used.
-     *
-     * @param array $arr the array to dedup
-     *
-     * @return array array with only de-duped values
-     */
-    public static function unique(array $arr) : array
-    {
-        // filter out all duplicate values
-        return array_filter($arr, static function($item) {
-            // contrary to popular belief, this is not as static as you think...
-            static $vars = [];
-
-            if (in_array($item, $vars, true))
-            {
-                // duplicate
-                return false;
-            }
-
-
-            // record we've had this value
-            $vars[] = $item;
-
-            // unique
-            return true;
-        });
-    }
-
-    /**
      * Calculate the sum of an array
      *
-     * @param array  $array the array containing the values
+     * @param mixed  $array the array containing the values
      * @param string $key   key of the value to pluck
      *
      * @return float the sum value
      */
-    public static function sum(array $array, string $key) : float
+    public static function sum(mixed $array, string $key) : float
     {
         if ( ! is_array($array) and ! $array instanceof \ArrayAccess)
         {
@@ -1194,14 +1155,14 @@ final class Arr
     /**
      * Get the previous value or key from an array using the current array key
      *
-     * @param array  $array     the array containing the values
+     * @param mixed  $array     the array containing the values
      * @param mixed $key       key of the current entry to use as reference
      * @param bool   $get_value if true, return the previous value instead of the previous key
      * @param bool   $strict    if true, do a strict key comparison
      *
      * @return mixed the value in the array, null if there is no previous value, or false if the key doesn't exist
      */
-    public static function previous_by_key(array $array, mixed $key, bool $get_value = false, bool $strict = false) : mixed
+    public static function previous_by_key(mixed $array, mixed $key, bool $get_value = false, bool $strict = false) : mixed
     {
         if ( ! is_array($array) and ! $array instanceof \ArrayAccess)
         {
@@ -1232,14 +1193,14 @@ final class Arr
     /**
      * Get the next value or key from an array using the current array key
      *
-     * @param array  $array     the array containing the values
+     * @param mixed  $array     the array containing the values
      * @param mixed $key       key of the current entry to use as reference
      * @param bool   $get_value if true, return the next value instead of the next key
      * @param bool   $strict    if true, do a strict key comparison
      *
      * @return mixed the value in the array, null if there is no next value, or false if the key doesn't exist
      */
-    public static function next_by_key(array $array, mixed $key, bool $get_value = false, bool $strict = false) : mixed
+    public static function next_by_key(mixed $array, mixed $key, bool $get_value = false, bool $strict = false) : mixed
     {
         if ( ! is_array($array) and ! $array instanceof \ArrayAccess)
         {
@@ -1308,14 +1269,14 @@ final class Arr
     /**
      * Get the next value or key from an array using the current array value
      *
-     * @param array  $array     the array containing the values
+     * @param mixed  $array     the array containing the values
      * @param mixed $value     value of the current entry to use as reference
      * @param bool   $get_value if true, return the next value instead of the next key
      * @param bool   $strict    if true, do a strict key comparison
      *
      * @return mixed the value in the array, null if there is no next value, or false if the key doesn't exist
      */
-    public static function next_by_value(array $array, mixed $value, bool $get_value = true, bool $strict = false) : mixed
+    public static function next_by_value(mixed $array, mixed $value, bool $get_value = true, bool $strict = false) : mixed
     {
         if ( ! is_array($array) and ! $array instanceof \ArrayAccess)
         {

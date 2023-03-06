@@ -111,13 +111,13 @@ class Inflector
     /**
      * Add order suffix to numbers ex. 1st 2nd 3rd 4th 5th
      *
-     * @param int $number the number to ordinalize
+     * @param mixed $number the number to ordinalize
      *
      * @return string the ordinalized version of $number
      *
      * @link    http://snipplr.com/view/4627/a-function-to-add-a-prefix-to-numbers-ex-1st-2nd-3rd-4th-5th/
      */
-    public static function ordinalize(int $number) : string
+    public static function ordinalize(mixed $number) : string
     {
         if ( ! is_numeric($number))
         {
@@ -135,22 +135,14 @@ class Inflector
             case 1:
                 return $number . 'st';
 
-                break;
-
             case 2:
                 return $number . 'nd';
-
-                break;
 
             case 3:
                 return $number . 'rd';
 
-                break;
-
             default:
                 return $number . 'th';
-
-                break;
         }
     }
 
@@ -263,8 +255,8 @@ class Inflector
     public static function ascii(string $str, bool $allow_non_ascii = false) : string
     {
         // Translate unicode characters to their simpler counterparts
-        \Config::load('ascii', true);
-        $foreign_characters = \Config::get('ascii');
+        Config::load('ascii', true);
+        $foreign_characters = Config::get('ascii');
 
         $str = preg_replace(array_keys($foreign_characters), array_values($foreign_characters), $str);
 
@@ -346,7 +338,7 @@ class Inflector
 
         if ($lowercase === true)
         {
-            $str = \Str::ucfirst($str);
+            $str = Str::ucfirst($str);
         }
 
         return str_replace($sep, ' ', (string) $str);

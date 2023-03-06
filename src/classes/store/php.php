@@ -5,6 +5,8 @@
 
 namespace Velocite\Store;
 
+use \Velocite\Finder;
+
 /**
  * PHP store file parser
  */
@@ -44,13 +46,13 @@ class Php extends File
      *
      * @return bool \File::update result
      */
-    public function save(array $contents) : bool
+    public function save( string $location, array $contents) : bool
     {
         // store the current filename
         $file = $this->file;
 
         // save it
-        $return = parent::save($contents);
+        $return = parent::save( $location, $contents );
 
         // existing file? saved? and do we need to flush the opcode cache?
         if ($file == $this->file and $return and static::$flush_needed)
@@ -58,11 +60,11 @@ class Php extends File
             if ($this->file[0] !== '/' and ( ! isset($this->file[1]) or $this->file[1] !== ':'))
             {
                 // locate the file
-                $file = \Finder::search('config', $this->file, $this->ext);
+                $file = Finder::search($location, $this->file, $this->ext);
             }
 
             // make sure we have a fallback
-            $file or $file = APPPATH . 'config' . DS . $this->file . $this->ext;
+            $file or $file = APPPATH . $location . DS . $this->file . $this->ext;
 
             // flush the opcode caches that are active
             static::$uses_opcache and opcache_invalidate($file, true);
@@ -92,11 +94,7 @@ class Php extends File
      */
     protected function export_format(array $contents) : string
     {
-        $output = <<<CONF
-            <?php
-
-            CONF;
-        $output .= 'return ' . str_replace(['array (' . PHP_EOL, '\'' . APPPATH, '\'' . DOCROOT, '\'' . COREPATH, '\'' . PKGPATH], ['array(' . PHP_EOL, 'APPPATH.\'', 'DOCROOT.\'', 'COREPATH.\'', 'PKGPATH.\''], var_export($contents, true)) . ";\n";
+        $output = "<?php\n\nreturn " . var_export($contents, true) . ";\n";
 
         return $output;
     }

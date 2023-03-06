@@ -67,7 +67,24 @@ final class Velocite
      */
     public static $env = Velocite::DEVELOPMENT;
 
-    public static function init ($config) : void
+    /**
+     * @var string App config location
+     */
+    public static $config_dir = '';
+
+    /**
+     * @var string App lang location
+     */
+    public static $lang_dir = '';
+
+    /**
+     * Velocite init method with config options
+     *
+     * @param array $config
+     *
+     * @return void
+     */
+    public static function init (array $config = []) : void
     {
         if ( ! defined ('APPPATH') and empty($config['app_path']) )
         {
@@ -76,6 +93,12 @@ final class Velocite
 
         // Define app path
         ! defined ('APPPATH') and define('APPPATH', $config['app_path']);
+
+        // Set config dir
+        static::$config_dir = $config['config_dir'] ?? 'config';
+
+        // Set lang dir
+        static::$lang_dir = $config['lang_dir'] ?? 'lang';
 
         // Define env
         ! defined ('VELOCITE_ENV') and define('VELOCITE_ENV', $config['env'] ?? static::DEVELOPMENT);
@@ -100,6 +123,27 @@ final class Velocite
         Lang::_init();
         Finder::_init();
         Inflector::_init();
+        Format::_init();
+        File::_init();
+
+        // Always load config and lang
+        $always_load = Config::get('always_load');
+
+        if ( ! empty ($always_load['config']) )
+        {
+            foreach ($always_load['config'] as $config => $config_group)
+            {
+                Config::load((is_int($config) ? $config_group : $config), (is_int($config) ? true : $config_group));
+            }
+        }
+
+        if ( ! empty ($always_load['language']) )
+        {
+            foreach ($always_load['language'] as $lang => $lang_group)
+            {
+                Lang::load((is_int($lang) ? $lang_group : $lang), (is_int($lang) ? true : $lang_group));
+            }
+        }
     }
 
     /**

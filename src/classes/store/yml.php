@@ -5,6 +5,8 @@
 
 namespace Velocite\Store;
 
+use Velocite\Format;
+
 /**
  * Yaml Config file parser
  */
@@ -24,9 +26,9 @@ class Yml extends File
      */
     protected function load_file(string $file) : array
     {
-        $contents = $this->parse_vars(file_get_contents($file));
+        $contents = file_get_contents($file);
 
-        return \Format::forge($contents, 'yaml')->to_array();
+        return Format::forge($contents, 'yaml')->to_array();
     }
 
     /**
@@ -38,8 +40,6 @@ class Yml extends File
      */
     protected function export_format(array $contents) : string
     {
-        $this->prep_vars($contents);
-
         return Format::forge($contents)->to_yaml();
     }
 }

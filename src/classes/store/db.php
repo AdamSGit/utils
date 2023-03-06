@@ -33,7 +33,7 @@ class Db implements ConfigInterface
         $this->identifier = $identifier;
 
         $this->vars = [
-            'APPPATH'  => APPPATH
+            'APPPATH'  => APPPATH,
         ] + $vars;
 
         $this->database = \Config::get('config.database', null);
@@ -72,7 +72,7 @@ class Db implements ConfigInterface
         // did we succeed?
         if ($result->count())
         {
-            empty($result[0]['config']) or $config = unserialize($this->parse_vars($result[0]['config']));
+            empty($result[0]['config']) or $config = unserialize($result[0]['config']);
         }
 
         return $config;
@@ -98,7 +98,6 @@ class Db implements ConfigInterface
     public function save($contents) : bool
     {
         // prep the contents
-        $this->prep_vars($contents);
         $contents = serialize($contents);
 
         // update the config in the database

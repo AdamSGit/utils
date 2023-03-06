@@ -24,7 +24,7 @@ class Ini extends File
      */
     protected function load_file(string $file) : array
     {
-        $contents = $this->parse_vars(file_get_contents($file));
+        $contents = file_get_contents($file);
 
         return parse_ini_string($contents, true);
     }
@@ -62,7 +62,9 @@ class Ini extends File
                 {
                     $key++;
                 }
+
                 $subSection = array_merge($parent, (array) $key);
+
                 // Add section information to the output
                 if (Arr::is_assoc($value))
                 {
@@ -72,14 +74,16 @@ class Ini extends File
                     }
                     $returnValue .= '[' . implode(':', $subSection) . ']' . PHP_EOL;
                 }
+
                 // Recursively traverse deeper
                 $returnValue .= $this->buildOutputString($value, $subSection);
                 $returnValue .= PHP_EOL;
             }
             elseif (isset($value))
             {
+                // Plain key->value case
                 $returnValue .= "{$key}=" . (is_bool($value) ? var_export($value, true) : $value) . PHP_EOL;
-            } // Plain key->value case
+            }
         }
 
         return count($parent) ? $returnValue : rtrim($returnValue) . PHP_EOL;

@@ -53,6 +53,8 @@ class Cli
         'light_gray'	=> '47',
     ];
 
+    protected static $STDIN;
+
     protected static $STDOUT;
 
     protected static $STDERR;
@@ -67,6 +69,25 @@ class Cli
             throw new \Exception('Cli class cannot be used outside of the command line.');
         }
 
+        static::_init_options();
+
+        // Readline is an extension for PHP that makes interactive with PHP much more bash-like
+        // http://www.php.net/manual/en/readline.installation.php
+        static::$readline_support = extension_loaded('readline');
+
+        static::set_io();
+    }
+
+    /**
+     * Init cli options from server param
+     * This method shouldn't be used directly and exist for unit test purpose
+     *
+     * @return void
+     */
+    public static function _init_options() : void
+    {
+        static::$args = [];
+
         for ($i = 1; $i < $_SERVER['argc']; $i++)
         {
             $arg = explode('=', $_SERVER['argv'][$i]);
@@ -78,13 +99,55 @@ class Cli
                 static::$args[ltrim($arg[0], '-')] = $arg[1] ?? true;
             }
         }
+    }
 
-        // Readline is an extension for PHP that makes interactive with PHP much more bash-like
-        // http://www.php.net/manual/en/readline.installation.php
-        static::$readline_support = extension_loaded('readline');
+    /**
+     * Set stdout and stderr stream to php regular stdout and stderr stream. Close actuals one before if not already default
+     *
+     * @return void
+     */
+    public static function set_io() : void
+    {
+        static::set_stderr(STDERR);
+        static::set_stdout(STDOUT);
+        static::set_stdin(STDIN);
+    }
 
-        static::$STDERR = STDERR;
-        static::$STDOUT = STDOUT;
+    /**
+     * Stdout stream setter
+     *
+     * @param [type] $stdout
+     * @param mixed $stdin
+     *
+     * @return void
+     */
+    public static function set_stdin($stdin) : void
+    {
+        static::$STDIN = $stdin;
+    }
+
+    /**
+     * Stdout stream setter
+     *
+     * @param [type] $stdout
+     *
+     * @return void
+     */
+    public static function set_stdout($stdout) : void
+    {
+        static::$STDOUT = $stdout;
+    }
+
+    /**
+     * stderr stream setter
+     *
+     * @param [type] $stderr
+     *
+     * @return void
+     */
+    public static function set_stderr($stderr) : void
+    {
+        static::$STDERR = $stderr;
     }
 
     /**
@@ -99,7 +162,7 @@ class Cli
      *
      * @return mixed
      */
-    public static function option($name, $default = null) : mixed
+    public static function option(string|int $name, mixed $default = null) : mixed
     {
         if ( ! isset(static::$args[$name]))
         {
@@ -113,11 +176,11 @@ class Cli
      * Allows you to set a commandline option from code
      *
      * @param string|int $name  the name of the option (int if unnamed)
-     * @param mixed|null $value value to set, or null to delete the option
+     * @param mixed      $value value to set, or null to delete the option
      *
-     * @return mixed
+     * @return void
      */
-    public static function set_option($name, $value = null) : mixed
+    public static function set_option(string|int $name, mixed $value = null) : void
     {
         if ($value === null)
         {
@@ -151,7 +214,7 @@ class Cli
 
         echo $prefix;
 
-        return fgets(STDIN);
+        return fgets(static::$STDIN);
     }
 
     /**
@@ -279,7 +342,7 @@ class Cli
      *
      * @throws CliException
      */
-    public static function write($text = '', ?string $foreground = null, ?string $background = null) : void
+    public static function write($text = '', string|null $foreground = null, string|null $background = null) : void
     {
         if (is_array($text))
         {
@@ -325,7 +388,7 @@ class Cli
      */
     public static function beep(int $num = 1) : void
     {
-        echo str_repeat("\x07", $num);
+        fwrite(static::$STDERR, str_repeat("\x07", $num));
     }
 
     /**
@@ -347,6 +410,7 @@ class Cli
                 sleep(1);
                 $time--;
             }
+
             static::write();
         }
         else
@@ -417,7 +481,7 @@ class Cli
      *
      * @return string the color coded string
      */
-    public static function color(string $text, string $foreground, ?string $background = null, ?string $format=null) : string
+    public static function color(string $text, string|null $foreground, string|null $background = null, ?string $format=null) : string
     {
         if (static::is_windows())
         {
@@ -429,17 +493,22 @@ class Cli
             return $text;
         }
 
-        if ( ! array_key_exists($foreground, static::$foreground_colors))
+        if ( $foreground and ! array_key_exists($foreground, static::$foreground_colors))
         {
             throw new CliException('Invalid CLI foreground color: ' . $foreground);
         }
 
-        if ( $background !== null and ! array_key_exists($background, static::$background_colors))
+        if ( $background and ! array_key_exists($background, static::$background_colors))
         {
             throw new CliException('Invalid CLI background color: ' . $background);
         }
 
-        $string = "\033[" . static::$foreground_colors[$foreground] . 'm';
+        $string = '';
+
+        if ( $foreground )
+        {
+            $string = "\033[" . static::$foreground_colors[$foreground] . 'm';
+        }
 
         if ($background !== null)
         {
@@ -483,59 +552,5 @@ class Cli
         {
             pclose(popen($call . ' > ' . $output . ' &', 'r'));
         }
-    }
-
-    /**
-     * Redirect STDERR writes to this file or fh
-     *
-     * Call with no argument to retrieve the current filehandle.
-     *
-     * Is not smart about opening the file if it's a string. Existing files will be truncated.
-     *
-     * @param resource|string $fh opened filehandle or string filename
-     *
-     * @return resource
-     */
-    public static function stderr($fh = null)
-    {
-        $orig = static::$STDERR;
-
-        if (null !== $fh)
-        {
-            if (is_string($fh))
-            {
-                $fh = fopen($fh, 'w');
-            }
-            static::$STDERR = $fh;
-        }
-
-        return $orig;
-    }
-
-    /**
-     * Redirect STDOUT writes to this file or fh
-     *
-     * Call with no argument to retrieve the current filehandle.
-     *
-     * Is not smart about opening the file if it's a string. Existing files will be truncated.
-     *
-     * @param resource|string|null $fh opened filehandle or string filename
-     *
-     * @return resource
-     */
-    public static function stdout($fh = null)
-    {
-        $orig = static::$STDOUT;
-
-        if (null !== $fh)
-        {
-            if (is_string($fh))
-            {
-                $fh = fopen($fh, 'w');
-            }
-            static::$STDOUT = $fh;
-        }
-
-        return $orig;
     }
 }

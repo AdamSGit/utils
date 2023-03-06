@@ -5,9 +5,7 @@
 
 namespace Velocite;
 
-class StoreException extends \Exception
-{
-}
+use Velocite\Exception\StoreException;
 
 /**
  * Config class
@@ -17,14 +15,15 @@ class Store
     /**
      * Loads a store file.
      *
-     * @param string|array      $location
-     * @param string            $file      string file
+     * @param string|array $locations
+     * @param string       $file      string file
+     * @param bool         $overwrite true for array_merge, false for \Arr::merge
      *
      * @throws StoreException
      *
      * @return array the (loaded) config array
      */
-    public static function load($location, $file, $cache = true) : ?array
+    public static function load( string|array $locations, string $file, bool $overwrite = false) : ?array
     {
         // storage for the config
         $store = [];
@@ -32,28 +31,29 @@ class Store
         // Config_Instance class
         $class = null;
 
+        // Make sure location is an array
+        ! is_array($locations) && $locations = [$locations];
+
+        // Empty file
+        if ( ! $file )
+        {
+            throw new StoreException(sprintf('No valid file provided.'));
+        }
+
         $info = pathinfo($file);
 
         $type = $info['extension'] ?? 'php';
 
         $class = '\\Velocite\\Store\\' . ucfirst($type);
 
-        if (class_exists($class))
-        {
-            // Call init method if the class has some
-            method_exists($class, '_init') and $class::_init();
-            $class = new $class($location, $info['filename']);
-        }
-        else
+        if ( ! class_exists($class))
         {
             throw new StoreException(sprintf('Invalid store type "%s".', $type));
         }
 
-        // no arguments?
-        if ( ! $file )
-        {
-            throw new StoreException(sprintf('No valid store file argument given'));
-        }
+        // Call init method if the class has some
+        method_exists($class, '_init') and $class::_init();
+        $class = new $class($info['filename']);
 
         // if we have a Config instance class?
         if (is_object($class))
@@ -61,7 +61,7 @@ class Store
             // then load its config
             try
             {
-                $store = $class->load( $cache );
+                $store = $class->load( $locations, $overwrite );
             }
             catch (StoreException $e)
             {
@@ -83,17 +83,8 @@ class Store
      *
      * @return bool false when config is empty or invalid else \File::update result
      */
-    public static function save(string $file, $config) : bool
+    public static function save( string $location, string $file, $config ) : bool
     {
-        if ( ! is_array($config))
-        {
-            if ( ! isset(static::$items[$config]))
-            {
-                return false;
-            }
-            $config = static::$items[$config];
-        }
-
         $info = pathinfo($file);
         $type = 'php';
 
@@ -107,77 +98,15 @@ class Store
             }
         }
 
-        $class = '\\Velocite\\Config\\' . ucfirst($type);
+        $class = '\\Velocite\\Store\\' . ucfirst($type);
 
         if ( ! class_exists($class))
         {
-            throw new StoreException(sprintf('Invalid config type "%s".', $type));
+            throw new StoreException(sprintf('Invalid store type "%s".', $type));
         }
 
         $driver = new $class($file);
 
-        return $driver->save($config);
-    }
-
-    /**
-     * Returns a (dot notated) config setting
-     *
-     * @param string $item    name of the config item, can be dot notated
-     * @param mixed  $default the return value if the item isn't found
-     *
-     * @return mixed the config setting or default if not found
-     */
-    public static function get(string $item, $default = null) : mixed
-    {
-        if (array_key_exists($item, static::$items))
-        {
-            return static::$items[$item];
-        }
-        elseif ( ! array_key_exists($item, static::$itemcache))
-        {
-            // cook up something unique
-            $miss = new \stdClass();
-
-            $val = Arr::get(static::$items, $item, $miss);
-
-            // so we can detect a miss here...
-            if ($val === $miss)
-            {
-                return $default;
-            }
-
-            static::$itemcache[$item] = $val;
-        }
-
-        return Str::value(static::$itemcache[$item]);
-    }
-
-    /**
-     * Sets a (dot notated) config item
-     *
-     * @param string $item  a (dot notated) config key
-     * @param mixed  $value the config value
-     */
-    public static function set(string $item, $value) : void
-    {
-        strpos($item, '.') === false or static::$itemcache[$item] = $value;
-        Arr::set(static::$items, $item, $value);
-    }
-
-    /**
-     * Deletes a (dot notated) config item
-     *
-     * @param string $item a (dot notated) config key
-     *
-     * @return array|bool the Arr::delete result, success boolean or array of success booleans
-     */
-    public static function delete(string $item)
-    {
-        if (isset(static::$itemcache[$item]))
-        {
-            unset(static::$itemcache[$item]);
-        }
-
-        return Arr::delete(static::$items, $item);
+        return $driver->save($location, $config);
     }
 }

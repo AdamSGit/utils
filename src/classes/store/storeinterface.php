@@ -10,9 +10,9 @@ namespace Velocite\Store;
  */
 interface StoreInterface
 {
-    public function load(bool $overwrite = false) : array;
+    public function load( array $locations ) : array;
 
     public function group() : string;
 
-    public function save(array $contents) : bool;
+    public function save( string $location, array $contents) : bool;
 }

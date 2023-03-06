@@ -5,6 +5,8 @@
 
 namespace Velocite\Store;
 
+use Velocite\Format;
+
 /**
  * JSON Config file parser
  */
@@ -24,7 +26,7 @@ class Json extends File
      */
     protected function load_file(string $file) : array
     {
-        $contents = $this->parse_vars(file_get_contents($file));
+        $contents = file_get_contents($file);
 
         return json_decode($contents, true);
     }
@@ -38,8 +40,6 @@ class Json extends File
      */
     protected function export_format(array $contents) : string
     {
-        $this->prep_vars($contents);
-
-        return \Format::forge()->to_json($contents, true);
+        return Format::forge()->to_json($contents, true);
     }
 }

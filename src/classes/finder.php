@@ -309,22 +309,8 @@ class Finder
      */
     public function locate(string $dir, string $file, string $ext = '.php', bool $multiple = false, bool $cache = true) : mixed
     {
-        $found = $multiple ? [] : false;
-
-        // determine the cache prefix
-        if ($multiple)
-        {
-            // make sure cache is not used if the loaded package and module list is changed
-            $cachekey = $file;
-            class_exists('Module', false) and $cachekey  .= implode('|', \Module::loaded());
-            $cachekey                                    .= '|';
-            class_exists('Package', false) and $cachekey .= implode('|', \Package::loaded());
-            $cache_id = md5($cachekey) . '.';
-        }
-        else
-        {
-            $cache_id = 'S.';
-        }
+        $found    = $multiple ? [] : false;
+        $cache_id = 'S.';
 
         $paths = $this->paths;
 
@@ -335,7 +321,7 @@ class Finder
         $file = $this->prep_path($dir) . $file . $ext;
 
         $cache_id .= $dir . $file . $ext;
-        
+
         if ($cache and $cached_path = $this->from_cache($cache_id))
         {
             return $cached_path;

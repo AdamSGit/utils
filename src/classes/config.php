@@ -29,6 +29,18 @@ class Config
     protected static $itemcache = [];
 
     /**
+     * Reset all static data from this class
+     *
+     * @return void
+     */
+    public static function _reset() : void
+    {
+        static::$loaded_files = [];
+        static::$items        = [];
+        static::$itemcache    = [];
+    }
+
+    /**
      * Loads a config file.
      *
      * @param mixed $file      string file | config array | Config_Interface instance
@@ -48,13 +60,18 @@ class Config
         // name of the config group
         $name = $group === true ? $file : ($group === null ? null : $group);
 
+        if ( $name and str_contains($name, '.' ))
+        {
+            $name = explode('.', $name)[0];
+        }
+
         // need to store flag
         $cache = ($group !== false);
 
         // process according to input type
         if ( empty($file) )
         {
-            throw new ConfigException("Tried to load empty config");
+            throw new ConfigException('Tried to load empty config');
         }
 
         // if we have this config in cache, load it
@@ -73,7 +90,7 @@ class Config
 
         try
         {
-            $config = Store::load( 'config', $file, $cache );
+            $config = Store::load( [Velocite::$config_dir . DS . Velocite::$env, Velocite::$config_dir], $file, $cache );
         }
         catch( StoreException $e )
         {
@@ -93,7 +110,7 @@ class Config
             // or in a named config
             else
             {
-                if ( ! isset(static::$items[$name]) or $reload)
+                if ( ! isset(static::$items[$name]) or $reload )
                 {
                     static::$items[$name] = [];
                 }
@@ -109,7 +126,7 @@ class Config
 
                 foreach (static::$itemcache as $key => $value)
                 {
-                    if (strpos($key, $name) === 0)
+                    if ( str_starts_with($key, $name) )
                     {
                         unset(static::$itemcache[$key]);
                     }
@@ -126,12 +143,13 @@ class Config
      *
      * @param string       $file   desired file name
      * @param string|array $config master config array key or config array
+     * @param bool         $env    Should file be save in env config subdir, or config root
      *
      * @throws ConfigException
      *
      * @return bool false when config is empty or invalid else \File::update result
      */
-    public static function save(string $file, $config) : bool
+    public static function save(string $file, string|array $config, bool $env = false ) : bool
     {
         if ( ! is_array($config))
         {
@@ -143,7 +161,14 @@ class Config
             $config = static::$items[$config];
         }
 
-        return Store::save($file, $config);
+        $path = APPPATH . DS . Velocite::$config_dir;
+
+        if ($env)
+        {
+            $path .= DS . Velocite::$env;
+        }
+
+        return Store::save( $path, $file, $config);
     }
 
     /**
@@ -163,12 +188,12 @@ class Config
 
         $val = Arr::get(static::$items, $item);
 
-        if ($val and $val !== $default)
+        if ($val and $val !== $default and str_contains($item, '.'))
         {
             static::$itemcache[$item] = $val;
         }
 
-        return Str::value($val);
+        return $val ? Str::value($val) : $default;
     }
 
     /**
@@ -179,7 +204,7 @@ class Config
      */
     public static function set(string $item, $value) : void
     {
-        strpos($item, '.') === false or static::$itemcache[$item] = $value;
+        str_contains($item, '.') && static::$itemcache[$item] = $value;
         Arr::set(static::$items, $item, $value);
     }
 

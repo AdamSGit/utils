@@ -1,6 +1,5 @@
 <?php
 
-// Enable strict typing
 declare(strict_types=1);
 
 // Directory sepataror shortcut
@@ -24,7 +23,7 @@ if ( ! defined('MBSTRING'))
 }
 
 /*
- * A wrapper function for Lang::get()
+ * A shorthand function for Lang::get()
  *
  * @param	mixed	The string to translate
  * @param	array	The parameters
@@ -35,5 +34,21 @@ if ( ! function_exists('__'))
     function __(string $line, array $params = [], $default = null, ?string $language = null)
     {
         return Velocite\Lang::get($line, $params, $default, $language);
+    }
+}
+
+/*
+ * A shorthand function for Lang::get_plural()
+ *
+ * @param	mixed	The string to translate
+ * @param	array	The parameters
+ * @count	integer	The elements count
+ * @return	string
+ */
+if ( ! function_exists('__s'))
+{
+    function __s(string $line, array $params = [], $count = 0, $default = null, ?string $language = null)
+    {
+        return Velocite\Lang::get_plural($line, $params, $count, $default, $language);
     }
 }

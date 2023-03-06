@@ -6,21 +6,16 @@
 namespace Velocite\Store;
 
 use Velocite\Arr;
+use Velocite\Config;
 use Velocite\Finder;
-use Velocite\StoreException;
+use Velocite\Exception\StoreException;
 
 /**
  * A base Store File class for File based stores.
  */
 abstract class File implements StoreInterface
 {
-    use Vars;
-
     protected $file;
-
-    protected $location;
-
-    protected $vars = [];
 
     /**
      * Sets up the file to be parsed and variables
@@ -28,31 +23,28 @@ abstract class File implements StoreInterface
      * @param string $file Config file name
      * @param array  $vars Variables to parse in the file
      */
-    public function __construct(string|array $location, ?string $file = null, array $vars = [])
+    public function __construct( ?string $file = null, array $vars = [])
     {
-        $this->location = is_array($location) ? $location : [$location];
         $this->file     = $file;
-        $this->vars     = $vars;
-
-        // Todo strpos check extension and remove it
     }
 
     /**
      * Loads the config file(s).
      *
-     * @param bool $overwrite Whether to overwrite existing values
-     * @param bool $cache     Whether to cache this path or not
+     * @param array $locations
      *
      * @return array the config array
      */
-    public function load(bool $overwrite = false, bool $cache = true) : array
+    public function load( array $locations, bool $overwrite = false ) : array
     {
-        $paths  = $this->find_file($cache);
-        $store = [];
+        $paths  = $this->find_file($locations);
+        $store  = [];
 
         foreach ($paths as $path)
         {
-            $store = array_merge($store, $this->load_file($path));
+            $store = $overwrite ?
+                array_merge($store, $this->load_file($path)) :
+                Arr::merge($store, $this->load_file($path));
         }
 
         return $store;
@@ -75,8 +67,10 @@ abstract class File implements StoreInterface
      *
      * @return bool \File::update result
      */
-    public function save(array $contents) : bool
+    public function save( string $path, array $contents) : bool
     {
+        Config::load('file', true);
+
         // get the formatted output
         $output = $this->export_format($contents);
 
@@ -85,51 +79,21 @@ abstract class File implements StoreInterface
             return false;
         }
 
-        if ( ! $path = Finder::search('config', $this->file, $this->ext))
-        {
-            if ($pos = strripos($this->file, '::'))
-            {
-                // get the namespace path
-                if ($path = \Autoloader::namespace_path('\\' . ucfirst(substr($this->file, 0, $pos))))
-                {
-                    // strip the namespace from the filename
-                    $this->file = substr($this->file, $pos+2);
-
-                    // strip the classes directory as we need the module root
-                    $path = substr($path, 0, -8) . 'config' . DS . $this->file . $this->ext;
-                }
-                else
-                {
-                    // invalid namespace requested
-                    return false;
-                }
-            }
-        }
-
-        // absolute path requested?
-        if ($this->file[0] === '/' or (isset($this->file[1]) and $this->file[1] === ':'))
-        {
-            $path = $this->file;
-        }
-
-        // make sure we have a fallback
-        $path or $path = APPPATH . 'config' . DS . $this->file . $this->ext;
-
+        $path = $path . DS . $this->file . $this->ext;
         $path = pathinfo($path);
 
         if ( ! is_dir($path['dirname']))
         {
-            mkdir($path['dirname'], 0777, true);
+            mkdir($path['dirname'], Config::get('file.chmod.folders', 0777), true);
         }
 
-        $return = \File::update($path['dirname'], $path['basename'], $output);
+        $return = \Velocite\File::update($path['dirname'], $path['basename'], $output);
 
         if ($return)
         {
             try
             {
-                \Config::load('file', true);
-                chmod($path['dirname'] . DS . $path['basename'], \Config::get('file.chmod.files', 0666));
+                chmod($path['dirname'] . DS . $path['basename'], Config::get('file.chmod.files', 0666));
             }
             catch (\PhpErrorException $e)
             {
@@ -147,19 +111,20 @@ abstract class File implements StoreInterface
     /**
      * Finds the given config files
      *
-     * @param bool $cache Whether to cache this path or not
+     * @param array $location
+     * @param bool  $cache    Whether to cache this path or not
      *
      * @throws StoreException
      *
      * @return array
      */
-    protected function find_file(bool $cache = true) : array
+    protected function find_file( array $locations ) : array
     {
         $paths = [];
 
-        foreach($this->location as $location)
+        foreach ($locations as $location)
         {
-            $paths = Arr::merge($paths, Finder::search($location, $this->file, $this->ext, true, $cache));
+            $paths = Arr::merge($paths, Finder::search($location, $this->file, $this->ext, true, false));
         }
 
         if (empty($paths))

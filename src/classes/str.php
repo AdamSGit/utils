@@ -5,6 +5,8 @@
 
 namespace Velocite;
 
+use Velocite\Exception\VelociteException;
+
 /**
  * String handling with encoding support
  *
@@ -58,7 +60,7 @@ class Str
                 {
                     break;
                 }
-                $limit += (static::length($match[0][0]) - 1);
+                $limit += (static::strlen($match[0][0]) - 1);
             }
 
             // Handle all the html tags.
@@ -83,7 +85,7 @@ class Str
                     break;
                 }
 
-                $tag = static::sub(strtok($match[0][0], " \t\n\r\0\x0B>"), 1);
+                $tag = static::substr(strtok($match[0][0], " \t\n\r\0\x0B>"), 1);
 
                 if ($tag[0] != '/')
                 {
@@ -92,7 +94,7 @@ class Str
                         $tags[] = $tag;
                     }
                 }
-                elseif (end($tags) == static::sub($tag, 1))
+                elseif (end($tags) == static::substr($tag, 1))
                 {
                     array_pop($tags);
                 }
@@ -100,8 +102,8 @@ class Str
             }
         }
 
-        $new_string = static::sub($string, 0, $limit = min(static::length($string), $limit + $offset));
-        $new_string .= (static::length($string) > $limit ? $continuation : '');
+        $new_string = static::substr($string, 0, $limit = min(static::strlen($string), $limit + $offset));
+        $new_string .= (static::strlen($string) > $limit ? $continuation : '');
         $new_string .= (count($tags = array_reverse($tags)) ? '</' . implode('></', $tags) . '>' : '');
 
         return $new_string;
@@ -166,8 +168,6 @@ class Str
             case 'basic':
                 return mt_rand();
 
-                break;
-
             default:
             case 'alnum':
             case 'numeric':
@@ -218,17 +218,11 @@ class Str
 
                 return $str;
 
-                break;
-
             case 'unique':
                 return md5(uniqid(mt_rand()));
 
-                break;
-
             case 'sha1' :
                 return sha1(uniqid(mt_rand(), true));
-
-                break;
 
             case 'uuid':
                 $pool = ['8', '9', 'a', 'b'];
@@ -242,8 +236,6 @@ class Str
                     static::random('hexdec', 3),
                     static::random('hexdec', 12)
                 );
-
-                break;
         }
     }
 
@@ -276,22 +268,16 @@ class Str
      */
     public static function tr(string $string, array $array = []) : string
     {
-        if (is_string($string))
+        $tr_arr = [];
+
+        foreach ($array as $from => $to)
         {
-            $tr_arr = [];
-
-            foreach ($array as $from => $to)
-            {
-                substr($from, 0, 1) !== ':' and $from = ':' . $from;
-                $tr_arr[$from]                        = $to;
-            }
-            unset($array);
-
-            return strtr($string, $tr_arr);
+            substr($from, 0, 1) !== ':' and $from = ':' . $from;
+            $tr_arr[$from]                        = $to;
         }
+        unset($array);
 
-
-        return $string;
+        return strtr($string, $tr_arr);
     }
 
     /**
@@ -341,7 +327,14 @@ class Str
      */
     public static function is_serialized(string $string) : bool
     {
-        $array = @unserialize($string);
+        try
+        {
+            $array = unserialize($string);
+        }
+        catch( VelociteException $e )
+        {
+            return false;
+        }
 
         return ! ($array === false and $string !== 'b:0;');
     }
@@ -361,7 +354,7 @@ class Str
     // multibyte functions
 
     /**
-     * strpos — Find the position of the first occurrence of a substring in a string
+     * Strlen — Find the length of multibytes string
      *
      * @param string $str      the string being measured for length
      * @param string $encoding Defaults to the setting in the config, which defaults to UTF-8
@@ -568,11 +561,11 @@ class Str
      *
      * @return int The number of occurences found
      */
-    public static function substr_count(string $haystack, $needle, int $offset = 0, ?string $encoding = 'UTF-8') : int
+    public static function substr_count(string $haystack, $needle, ?string $encoding = 'UTF-8') : int
     {
         return (MBSTRING and $encoding)
-            ? mb_substr_count($haystack, $needle, $offset, $encoding)
-            : substr_count($haystack, $needle, $offset);
+            ? mb_substr_count($haystack, $needle, $encoding)
+            : substr_count($haystack, $needle);
     }
 
     /**

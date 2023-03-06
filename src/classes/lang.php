@@ -27,9 +27,27 @@ class Lang
      */
     public static $fallback;
 
+    /**
+     * Init method
+     *
+     * @return void
+     */
     public static function _init() : void
     {
         static::$fallback = (array) Config::get('language_fallback', 'en');
+    }
+
+    /**
+     * Reset all static data from this class
+     *
+     * @return void
+     */
+    public static function _reset() : void
+    {
+        Config::load('config');
+        static::$loaded_files = [];
+        static::$lines        = [];
+        static::set_lang(Config::get('language_fallback'));
     }
 
     /**
@@ -75,7 +93,7 @@ class Lang
 
         $group === true and $group = $file;
 
-        if ( ! $reload and ! is_array($file)  and ! is_object($file) and array_key_exists($language . '/' . $file, static::$loaded_files))
+        if ( ! $reload and ! is_array($file)  and ! is_object($file) and array_key_exists($language . DS . $file, static::$loaded_files))
         {
             if ($group and isset(static::$lines[$language][$group]))
             {
@@ -87,15 +105,30 @@ class Lang
 
         $lang = [];
 
-        static::$loaded_files[$language . '/' . $file] = func_get_args();
+        static::$loaded_files[$language . DS . $file] = func_get_args();
+
+        $location = "lang/{$language}";
+
+        // If file is a path that include dirs, set them to location
+        if (str_contains($file, DS))
+        {
+            $file_segments = explode(DS, $file);
+            $file          = array_pop($file_segments);
+            $location .= DS . implode(DS, $file_segments);
+        }
 
         try
         {
-            $lang = Store::load( "lang/{$language}", $file );
+            $lang = Store::load( $location, $file );
         }
         catch( StoreException $e )
         {
-            throw new LangException(sprintf('Config file "%s" not found.', $file));
+            throw new LangException(sprintf('Lang file "%s" not found.', $file));
+        }
+
+        if ( $lang === null )
+        {
+            return null;
         }
 
         isset(static::$lines[$language]) or static::$lines[$language] = [];
@@ -132,7 +165,7 @@ class Lang
      *
      * @return bool false when language is empty or invalid else \File::update result
      */
-    public static function save(string $file, $lang, ?string $language = null) : bool
+    public static function save(string $file, string|array $lang, ?string $language = null) : bool
     {
         ($language === null) and $language = static::get_lang();
 
@@ -146,7 +179,17 @@ class Lang
             $lang = static::$lines[$language][$lang];
         }
 
-        return Store::save($file, $lang);
+        $path = APPPATH . DS . Velocite::$lang_dir . DS . $language;
+
+        // If file is a path that include dirs, set them to location
+        if (str_contains($file, DS))
+        {
+            $file_segments = explode(DS, $file);
+            $file          = array_pop($file_segments);
+            $path .= DS . implode(DS, $file_segments);
+        }
+
+        return Store::save($path, $file, $lang);
     }
 
     /**
@@ -165,6 +208,42 @@ class Lang
         $value                             = Str::value(Arr::get(static::$lines[$language], $line, $default));
 
         return $value ? (is_string($value) ? Str::tr($value, $params) : $value) : $default;
+    }
+
+    /**
+     * Same than get() with plural support, with $count element to take into account
+     * Format Should be : "zero element | one element | 2+ elements". If no pipe is found in the language, return the full string
+     * That allow to use plural in some languages only
+     *
+     *
+     * @param string      $line     key for the line
+     * @param array       $params   array of params to str_replace
+     * @param integer     $count    Number of elements bein used in sentence
+     * @param mixed       $default  default value to return
+     * @param string|null $language name of the language to get, null for the configured language
+     *
+     * @return mixed either the line corresponding to count, or default when not found
+     */
+    public static function get_plural(string $line, array $params = [], int $count = 0, $default = null, ?string $language = null) : mixed
+    {
+        $plural_string = static::get($line, $params, $default, $language);
+
+        if (is_string($plural_string) and str_contains($plural_string, '|'))
+        {
+            $plural_string   = str_replace([' |', '| '], '|', $plural_string);
+            $plural_versions = explode('|', $plural_string);
+            $last            = count($plural_versions) - 1;
+
+            for ( $i = $last; $i >= 0; $i-- )
+            {
+                if ( $count >= $i )
+                {
+                    return $plural_versions[$i];
+                }
+            }
+        }
+
+        return $plural_string;
     }
 
     /**
@@ -230,7 +309,7 @@ class Lang
                     // reload with exactly the same arguments
                     if (strpos($file, $language . '/') !== 0)
                     {
-                        call_user_func_array('Lang::load', $args);
+                        call_user_func_array([static::class, 'load'], $args);
                     }
                 }
             }

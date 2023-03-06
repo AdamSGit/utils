@@ -1,31 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd"
-    bootstrap="./bootstrap_test.php"
+    xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.0/phpunit.xsd"
+    bootstrap="./tests/bootstrap.php"
     colors="true"
     stopOnFailure="false"
     defaultTimeLimit="60"
     enforceTimeLimit="true"
     stopOnSkipped="true"
     beStrictAboutOutputDuringTests="true"
+    cacheDirectory=".phpunit.cache"
+    executionOrder="depends,defects"
+    requireCoverageMetadata="true"
+    beStrictAboutCoverageMetadata="true"
+    failOnRisky="true"
+    failOnWarning="true"
 >
-    <php>
-        <server name="VELOCITE_ENV" value="test"/>
-    </php>
-    <coverage>
-        <include>
-            <directory suffix=".php">./src/classes</directory>
-        </include>
-        <exclude>
-        </exclude>
-    </coverage>
-    <logging>
-        <testdoxHtml outputFile="./unit.log.html"/>
-    </logging>
     <testsuites>
         <testsuite name="utils">
-            <file>./src/tests/arr.php</file>
+            <directory>tests/Velocite</directory>
         </testsuite>
     </testsuites>
+    <coverage>
+        <include>
+            <directory suffix=".php">src/classes</directory>
+        </include>
+        <report>
+            <html outputDirectory="coverage" lowUpperBound="50" highLowerBound="90"/>
+        </report>
+    </coverage>
 </phpunit>
