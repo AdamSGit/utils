@@ -89,7 +89,14 @@ return [
      *
      */
 
-    'areas' => [],
+    'areas' => [
+        'default' => [
+            'basedir'       => null,
+            'extensions'    => null,
+            'url'           => 'https://example.com',
+            'use_locks'     => true,
+        ],
+    ],
 
     /*
      * -------------------------------------------------------------------------

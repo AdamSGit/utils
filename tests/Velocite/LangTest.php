@@ -190,9 +190,11 @@ class LangTest extends \PHPUnit\Framework\TestCase
      * @covers Velocite\Arr
      * @covers Velocite\Config
      * @covers Velocite\Str
+     * @covers Velocite\File
      */
     public function test_delete_and_save() : void
     {
+        Lang::_init();
         Lang::_reset();
 
         Lang::load('test', true);
@@ -202,11 +204,32 @@ class LangTest extends \PHPUnit\Framework\TestCase
 
         Lang::_reset();
         Lang::load('test', true);
+        Lang::load('test', true);
+        Lang::load('test');
 
         $default = 'default_value';
         $this->assertEquals($default, Lang::get('test.hello', ['name' => 'Bob'], $default));
 
         Lang::set('test.hello', 'Hello there :name!');
         Lang::save('test', 'test');
+
+        // Nested
+        Lang::_reset();
+
+        Lang::load('nested/test', true);
+        Lang::delete('nested/test.hello');
+
+        Lang::save('nested/test', 'nested/test');
+
+        Lang::_reset();
+        Lang::load('nested/test', true);
+
+        $default = 'default_value';
+        $this->assertEquals($default, Lang::get('nested/test.hello', ['name' => 'Bob'], $default));
+
+        Lang::set('nested/test.hello', 'Hello there :name!');
+        Lang::save('nested/test', 'nested/test');
+
+        $this->assertFalse(Lang::save('nested/test', 'lang_that_doesn\'t exists'));
     }
 }

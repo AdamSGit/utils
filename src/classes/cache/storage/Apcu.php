@@ -5,17 +5,12 @@
 
 namespace Velocite\Cache\Storage;
 
-class Memcached extends Driver
+class Apcu extends Driver
 {
     /**
      * @const  string  Tag used for opening & closing cache properties
      */
     public const PROPS_TAG = 'Velocite_Cache_Properties';
-
-    /**
-     * @var Memcached storage for the memcached object
-     */
-    protected static $memcached = false;
 
     /**
      * @var array driver specific configuration
@@ -28,43 +23,18 @@ class Memcached extends Driver
     {
         parent::__construct($identifier, $config);
 
-        $this->config = $config['memcached'] ?? [];
+        $this->config = $config['apc'] ?? [];
 
-        // make sure we have a memcache id
+        // make sure we have an id
         $this->config['cache_id'] = $this->_validate_config('cache_id', $this->config['cache_id'] ?? 'velocite');
 
         // check for an expiration override
         $this->expiration = $this->_validate_config('expiration', $this->config['expiration'] ?? $this->expiration);
 
-        if (static::$memcached === false)
+        // do we have the PHP APC extension available
+        if ( ! function_exists('apcu_store') )
         {
-            // make sure we have memcached servers configured
-            $this->config['servers'] = $this->_validate_config('servers', $this->config['servers']);
-
-            // do we have the PHP memcached extension available
-            if ( ! class_exists('Memcached') )
-            {
-                throw new \Velocite\VelociteException('Memcached cache are configured, but your PHP installation doesn\'t have the Memcached extension loaded.');
-            }
-
-            // instantiate the memcached object
-            static::$memcached = new \Memcached();
-
-            // add the configured servers
-            static::$memcached->addServers($this->config['servers']);
-
-            // check if we can connect to all the server(s)
-            $added = static::$memcached->getStats();
-
-            foreach ($this->config['servers'] as $server)
-            {
-                $server = $server['host'] . ':' . $server['port'];
-
-                if ( ! isset($added[$server]) or $added[$server]['pid'] == -1)
-                {
-                    throw new \Velocite\VelociteException('Memcached cache is configured, but there is no connection possible. Check your configuration.');
-                }
-            }
+            throw new \Velocite\VelociteException('Your PHP installation doesn\'t have APC loaded.');
         }
     }
 
@@ -96,7 +66,7 @@ class Memcached extends Driver
             }
 
             // get the cache index
-            $index = static::$memcached->get($this->config['cache_id'] . $sections);
+            $index = apcu_fetch($this->config['cache_id'] . $sections);
 
             // get the key from the index
             $key = isset($index[$identifier][0]) ? $index[$identifier] : false;
@@ -116,17 +86,11 @@ class Memcached extends Driver
      */
     public function delete() : void
     {
-        // get the memcached key for the cache identifier
+        // get the APC key for the cache identifier
         $key = $this->_get_key(true);
 
-        // delete the key from the memcached server
-        if ($key and static::$memcached->delete($key) === false)
-        {
-            if (static::$memcached->getResultCode() !== \Memcached::RES_NOTFOUND)
-            {
-                throw new \Velocite\VelociteException('Memcached returned error code "' . static::$memcached->getResultCode() . '" on delete. Check your configuration.');
-            }
-        }
+        // delete the key from the apc store
+        $key and apcu_delete($key);
 
         $this->reset();
     }
@@ -144,7 +108,7 @@ class Memcached extends Driver
         $section = empty($section) ? '' : '.' . $section;
 
         // get the directory index
-        $index = static::$memcached->get($this->config['cache_id'] . '__DIR__');
+        $index = apcu_fetch($this->config['cache_id'] . '__DIR__');
 
         if (is_array($index))
         {
@@ -161,18 +125,18 @@ class Memcached extends Driver
             // loop through the indexes, delete all stored keys, then delete the indexes
             foreach ($dirs as $dir)
             {
-                $list = static::$memcached->get($dir);
+                $list = apcu_fetch($dir);
 
                 foreach ($list as $item)
                 {
-                    static::$memcached->delete($item[0]);
+                    apcu_delete($item[0]);
                 }
-                static::$memcached->delete($dir);
+                apcu_delete($dir);
             }
 
             // update the directory index
             $index = array_diff($index, $dirs);
-            static::$memcached->set($this->config['cache_id'] . '__DIR__', $index);
+            apcu_store($this->config['cache_id'] . '__DIR__', $index);
         }
 
         return true;
@@ -204,7 +168,7 @@ class Memcached extends Driver
      * @param   string
      * @param mixed $payload
      *
-     * @throws \UnexpectedValueException
+     * @throws UnexpectedValueException
      */
     protected function unprep_contents($payload) : void
     {
@@ -233,27 +197,22 @@ class Memcached extends Driver
     /**
      * Save a cache, this does the generic pre-processing
      *
-     * @throws \Velocite\VelociteException
-     *
      * @return bool success
      */
     protected function _set() : bool
     {
-        // get the memcached key for the cache identifier
+        // get the apc key for the cache identifier
         $key = $this->_get_key();
 
         $payload = $this->prep_contents();
 
-        // calculate relative expiration time (eg. 60s)
-        $expiration = null !== $this->expiration ? $this->expiration - time() : 0;
+        // adjust the expiration, apc uses a TTL instead of a timestamp
+        $expiration = null === $this->expiration ? 0 : (int) ($this->expiration - $this->created);
 
-        // if expiration value is less than 30 days, use relative value, otherwise use unix timestamp:
-        $expiration = $expiration <= 2592000 ? (int) $expiration : (int) $this->expiration;
-
-        // write it to the memcached server
-        if (static::$memcached->set($key, $payload, $expiration) === false)
+        // write it to the apc store
+        if (apcu_store($key, $payload, $expiration) === false)
         {
-            throw new \Velocite\VelociteException('Memcached returned error code "' . static::$memcached->getResultCode() . '" on write. Check your configuration.');
+            throw new \RuntimeException('APC returned failed to write. Check your configuration.');
         }
 
         // update the index
@@ -269,11 +228,11 @@ class Memcached extends Driver
      */
     protected function _get() : bool
     {
-        // get the memcached key for the cache identifier
+        // get the apc key for the cache identifier
         $key = $this->_get_key();
 
-        // fetch the cached data from the Memcached server
-        $payload = static::$memcached->get($key);
+        // fetch the cached data from the apc store
+        $payload = apcu_fetch($key);
 
         try
         {
@@ -288,80 +247,14 @@ class Memcached extends Driver
     }
 
     /**
-     * validate a driver config value
+     * get's the apc key belonging to the cache identifier
      *
-     * @param string $name  name of the config variable to validate
-     * @param mixed  $value
-     *
-     * @throws \Velocite\VelociteException
-     *
-     * @return mixed
-     */
-    protected function _validate_config(string $name, $value) : mixed
-    {
-        switch ($name)
-        {
-            case 'cache_id':
-                if (empty($value) or ! is_string($value))
-                {
-                    $value = 'velocite';
-                }
-
-                break;
-
-            case 'expiration':
-                if (empty($value) or ! is_numeric($value))
-                {
-                    $value = null;
-                }
-
-                break;
-
-            case 'servers':
-                // do we have a servers config
-                if ( empty($value) or ! is_array($value))
-                {
-                    $value = ['default' => ['host' => '127.0.0.1', 'port' => '11211']];
-                }
-
-                // validate the servers
-                foreach ($value as $key => $server)
-                {
-                    // do we have a host?
-                    if ( ! isset($server['host']) or ! is_string($server['host']))
-                    {
-                        throw new \Velocite\VelociteException('Invalid Memcached server definition in the cache configuration.');
-                    }
-                    // do we have a port number?
-                    if ( ! isset($server['port']) or ! is_numeric($server['port']) or $server['port'] < 1025 or $server['port'] > 65535)
-                    {
-                        throw new \Velocite\VelociteException('Invalid Memcached server definition in the cache configuration.');
-                    }
-                    // do we have a relative server weight?
-                    if ( ! isset($server['weight']) or ! is_numeric($server['weight']) or $server['weight'] < 0)
-                    {
-                        // set a default
-                        $value[$key]['weight'] = 0;
-                    }
-                }
-
-                break;
-
-            default:
-                break;
-        }
-
-        return $value;
-    }
-
-    /**
-     * Get's the memcached key belonging to the cache identifier
-     *
-     * @param bool $remove if true, remove the key retrieved from the index
+     * @param   bool  if true, remove the key retrieved from the index
+     * @param mixed $remove
      *
      * @return string
      */
-    protected function _get_key(bool $remove = false) : string
+    protected function _get_key($remove = false) : string
     {
         // get the current index information
         list($identifier, $sections, $index) = $this->_get_index();
@@ -374,7 +267,7 @@ class Memcached extends Driver
             if ( $key !== false )
             {
                 unset($index[$identifier]);
-                static::$memcached->set($this->config['cache_id'] . $sections, $index);
+                apcu_store($this->config['cache_id'] . $sections, $index);
             }
         }
         else
@@ -387,7 +280,7 @@ class Memcached extends Driver
     }
 
     /**
-     * Generate a new unique key for the current identifier
+     * generate a new unique key for the current identifier
      *
      * @return string
      */
@@ -425,7 +318,7 @@ class Memcached extends Driver
         }
 
         // get the cache index and return it
-        return [$identifier, $sections, static::$memcached->get($this->config['cache_id'] . $sections)];
+        return [$identifier, $sections, apcu_fetch($this->config['cache_id'] . $sections)];
     }
 
     /**
@@ -439,15 +332,14 @@ class Memcached extends Driver
         // get the current index information
         list($identifier, $sections, $index) = $this->_get_index();
 
-        // create a new index and store the key
-        is_array($index) or $index = [];
+        $index === false and $index = [];
 
         // store the key in the index and write the index back
         $index[$identifier] = [$key, $this->created];
-        static::$memcached->set($this->config['cache_id'] . $sections, $index, 0);
+        apcu_store($this->config['cache_id'] . $sections, array_merge($index, [$identifier => [$key, $this->created]]), 0);
 
         // get the directory index
-        $index = static::$memcached->get($this->config['cache_id'] . '__DIR__');
+        $index = apcu_fetch($this->config['cache_id'] . '__DIR__');
 
         if (is_array($index))
         {
@@ -462,6 +354,43 @@ class Memcached extends Driver
         }
 
         // update the directory index
-        static::$memcached->set($this->config['cache_id'] . '__DIR__', $index, 0);
+        apcu_store($this->config['cache_id'] . '__DIR__', $index, 0);
+    }
+
+    /**
+     * validate a driver config value
+     *
+     * @param   string  name of the config variable to validate
+     * @param   mixed   value
+     * @param mixed $name
+     * @param mixed $value
+     *
+     * @return mixed
+     */
+    private function _validate_config($name, $value) : mixed
+    {
+        switch ($name)
+        {
+            case 'cache_id':
+                if (empty($value) or ! is_string($value))
+                {
+                    $value = 'velocite';
+                }
+
+                break;
+
+            case 'expiration':
+                if (empty($value) or ! is_numeric($value))
+                {
+                    $value = null;
+                }
+
+                break;
+
+            default:
+                break;
+        }
+
+        return $value;
     }
 }

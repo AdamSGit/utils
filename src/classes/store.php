@@ -5,8 +5,6 @@
 
 namespace Velocite;
 
-use Velocite\Exception\StoreException;
-
 /**
  * Config class
  */

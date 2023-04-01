@@ -5,9 +5,6 @@
 
 namespace Velocite;
 
-/**
- * Main exception class
- */
-class Exception extends \Exception
+class InvalidPathException extends FileAccessException
 {
 }

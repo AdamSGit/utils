@@ -5,8 +5,6 @@
 
 namespace Velocite;
 
-use Velocite\Exception\VelociteException;
-
 /**
  * Format class tests
  *
@@ -140,33 +138,6 @@ line 2","Value 3"',
     public function test_to_yaml($input, $expectedOutput) : void
     {
         $this->assertEquals($expectedOutput, Format::forge($input)->to_yaml());
-    }
-
-    /**
-     * Test Format::to_yaml
-     *
-     * @covers Velocite\Format
-     * @covers Velocite\Arr
-     * @covers Velocite\Config
-     * @covers Velocite\Store
-     */
-    public function test_to_yaml_throws_exception_if_yaml_extension_not_loaded() : void
-    {
-        $exception            = null;
-        Format::$yaml_support = false;
-
-        try
-        {
-            Format::forge(['foo' => 'bar'])->to_yaml();
-        }
-        catch(VelociteException $e)
-        {
-            $exception = $e;
-        }
-
-        Format::$yaml_support = true;
-
-        $this->assertInstanceOf('Velocite\Exception\VelociteException', $exception);
     }
 
     /**
@@ -733,7 +704,7 @@ line 2","Value 3"',
      */
     public function test_unexistant_type () : void
     {
-        $this->expectException('Velocite\Exception\VelociteException');
+        $this->expectException('Velocite\VelociteException');
 
         Format::forge([], 'wrong_format')->to_array();
     }

@@ -125,6 +125,7 @@ final class Velocite
         Inflector::_init();
         Format::_init();
         File::_init();
+        Cache::_init();
 
         // Always load config and lang
         $always_load = Config::get('always_load');

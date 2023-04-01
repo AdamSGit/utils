@@ -293,7 +293,7 @@ class CliTest extends TestCase
      */
     public function test_write_with_invalid_forground() : void
     {
-        $this->expectException('Velocite\Exception\CliException');
+        $this->expectException('Velocite\CliException');
         Cli::write('test message', 'invalidcolor');
     }
 
@@ -307,7 +307,7 @@ class CliTest extends TestCase
      */
     public function test_write_with_invalid_background() : void
     {
-        $this->expectException('Velocite\Exception\CliException');
+        $this->expectException('Velocite\CliException');
         Cli::write('test message', null, 'invalidcolor');
     }
 

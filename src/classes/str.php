@@ -5,8 +5,6 @@
 
 namespace Velocite;
 
-use Velocite\Exception\VelociteException;
-
 /**
  * String handling with encoding support
  *

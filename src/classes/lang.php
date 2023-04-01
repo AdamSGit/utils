@@ -5,8 +5,6 @@
 
 namespace Velocite;
 
-use Velocite\Exception\LangException;
-
 /**
  * Language class (i18n)
  */

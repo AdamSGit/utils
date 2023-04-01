@@ -701,6 +701,7 @@ class ArrTest extends TestCase
      * Tests Arr::insert()
      *
      * @covers Velocite\Arr
+     * @covers Velocite\Errorhandler
      */
     public function test_insert_with_index_out_of_range() : void
     {
@@ -883,6 +884,7 @@ class ArrTest extends TestCase
      * Tests Arr::insert_before_key()
      *
      * @covers Velocite\Arr
+     * @covers Velocite\Errorhandler
      */
     public function test_insert_before_key_that_does_not_exist() : void
     {
@@ -911,6 +913,7 @@ class ArrTest extends TestCase
      * Tests Arr::insert_after_key()
      *
      * @covers Velocite\Arr
+     * @covers Velocite\Errorhandler
      */
     public function test_insert_after_key_that_does_not_exist() : void
     {
@@ -937,6 +940,7 @@ class ArrTest extends TestCase
      * Tests Arr::insert_before_value()
      *
      * @covers Velocite\Arr
+     * @covers Velocite\Errorhandler
      */
     public function test_insert_before_value_that_does_not_exists() : void
     {
@@ -963,6 +967,7 @@ class ArrTest extends TestCase
      * Tests Arr::insert_after_value()
      *
      * @covers Velocite\Arr
+     * @covers Velocite\Errorhandler
      */
     public function test_insert_after_value_that_does_not_exists() : void
     {

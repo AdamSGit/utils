@@ -180,6 +180,7 @@ class InflectorTest extends TestCase
      * @covers Velocite\Arr
      * @covers Velocite\Config
      * @covers Velocite\Store
+     * @covers Velocite\Security
      */
     public function test_friendly_title() : void
     {
@@ -196,6 +197,7 @@ class InflectorTest extends TestCase
      * @covers Velocite\Arr
      * @covers Velocite\Config
      * @covers Velocite\Store
+     * @covers Velocite\Security
      */
     public function test_friendly_title_sep() : void
     {
@@ -212,6 +214,7 @@ class InflectorTest extends TestCase
      * @covers Velocite\Arr
      * @covers Velocite\Config
      * @covers Velocite\Store
+     * @covers Velocite\Security
      */
     public function test_friendly_title_lowercase() : void
     {
@@ -228,6 +231,7 @@ class InflectorTest extends TestCase
      * @covers Velocite\Arr
      * @covers Velocite\Config
      * @covers Velocite\Store
+     * @covers Velocite\Security
      */
     public function test_friendly_title_non_ascii() : void
     {
@@ -244,6 +248,7 @@ class InflectorTest extends TestCase
      * @covers Velocite\Arr
      * @covers Velocite\Config
      * @covers Velocite\Store
+     * @covers Velocite\Security
      */
     public function test_friendly_title_allow_non_ascii() : void
     {

@@ -7,378 +7,393 @@ namespace Velocite\Cache\Storage;
 
 class File extends Driver
 {
-	/**
-	 * @const  string  Tag used for opening & closing cache properties
-	 */
-	const PROPS_TAG = 'Fuel_Cache_Properties';
+    /**
+     * @const  string  Tag used for opening & closing cache properties
+     */
+    public const PROPS_TAG = 'Velocite_Cache_Properties';
 
-	/**
-	 * @var  string  File caching basepath
-	 */
-	protected static $path = '';
+    /**
+     * @var string File caching basepath
+     */
+    protected static $path = '';
 
-	/**
-	 * @var  array  driver specific configuration
-	 */
-	protected $config = array();
+    /**
+     * @var array driver specific configuration
+     */
+    protected $config = [];
 
-	// ---------------------------------------------------------------------
+    // ---------------------------------------------------------------------
 
-	public static function _init()
-	{
-		\Config::load('file', true);
+    public static function _init() : void
+    {
+        \Velocite\Config::load('file', true);
 
-		// make sure the configured chmod values are octal
-		$chmod = \Config::get('file.chmod.folders', 0777);
-		is_string($chmod) and \Config::set('file.chmod.folders', octdec($chmod));
-		$chmod = \Config::get('file.chmod.files', 0666);
-		is_string($chmod) and \Config::set('file.chmod.files', octdec($chmod));
-	}
+        // make sure the configured chmod values are octal
+        $chmod = \Velocite\Config::get('file.chmod.folders', 0777);
+        is_string($chmod) and \Velocite\Config::set('file.chmod.folders', octdec($chmod));
+        $chmod = \Velocite\Config::get('file.chmod.files', 0666);
+        is_string($chmod) and \Velocite\Config::set('file.chmod.files', octdec($chmod));
+    }
 
-	// ---------------------------------------------------------------------
+    // ---------------------------------------------------------------------
 
-	public function __construct($identifier, $config)
-	{
-		parent::__construct($identifier, $config);
+    public function __construct($identifier, $config)
+    {
+        parent::__construct($identifier, $config);
 
-		$this->config = isset($config['file']) ? $config['file'] : array();
+        $this->config = $config['file'] ?? [];
 
-		// check for an expiration override
-		$this->expiration = $this->_validate_config('expiration', isset($this->config['expiration'])
-			? $this->config['expiration'] : $this->expiration);
+        // check for an expiration override
+        $this->expiration = $this->_validate_config('expiration', $this->config['expiration'] ?? $this->expiration);
 
-		// determine the file cache path
-		static::$path = !empty($this->config['path'])
-			? $this->config['path'] : \Config::get('cache_dir', APPPATH.'cache'.DS);
+        // determine the file cache path
+        static::$path = ! empty($this->config['path'])
+            ? $this->config['path'] : \Velocite\Config::get('cache_dir', APPPATH . DS . 'cache' . DS);
 
-		if ( ! is_dir(static::$path) || ! is_writable(static::$path))
-		{
-			throw new \FuelException('Cache directory does not exist or is not writable.');
-		}
-	}
+        if ( ! is_dir(static::$path) || ! is_writable(static::$path))
+        {
+            throw new \Velocite\VelociteException('Cache directory does not exist or is not writable.');
+        }
+    }
 
-	/**
-	 * Check if other caches or files have been changed since cache creation
-	 *
-	 * @param   array
-	 * @return  bool
-	 */
-	public function check_dependencies(array $dependencies)
-	{
-		foreach($dependencies as $dep)
-		{
-			if (is_file($file = static::$path.str_replace('.', DS, $dep).'.cache'))
-			{
-				$filemtime = filemtime($file);
-				if ($filemtime === false || $filemtime > $this->created)
-				{
-					return false;
-				}
-			}
-			elseif (is_file($dep))
-			{
-				$filemtime = filemtime($dep);
-				if ($filemtime === false || $filemtime > $this->created)
-				{
-					return false;
-				}
-			}
-			else
-			{
-				return false;
-			}
-		}
+    /**
+     * Check if other caches or files have been changed since cache creation
+     *
+     * @param   array
+     *
+     * @return bool
+     */
+    public function check_dependencies(array $dependencies) : bool
+    {
+        foreach ($dependencies as $dep)
+        {
+            if (is_file($file = static::$path . str_replace('.', DS, $dep) . '.cache'))
+            {
+                $filemtime = filemtime($file);
 
-		return true;
-	}
+                if ($filemtime === false || $filemtime > $this->created)
+                {
+                    return false;
+                }
+            }
+            elseif (is_file($dep))
+            {
+                $filemtime = filemtime($dep);
 
-	/**
-	 * Delete Cache
-	 */
-	public function delete()
-	{
-		$file = static::$path.$this->identifier_to_path($this->identifier).'.cache';
-		clearstatcache(true, $file);
-		if(is_file($file))
-		{
-			unlink($file);
-			$this->reset();
-		}
-	}
+                if ($filemtime === false || $filemtime > $this->created)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
 
-	/**
-	 * Purge all caches
-	 *
-	 * @param   string  $section  limit purge to subsection
-	 * @return  bool
-	 */
-	public function delete_all($section)
-	{
-		// get the cache root path and prep the requested section
-		$path = rtrim(static::$path, '\\/').DS;
-		$section = $section === null ? '' : static::identifier_to_path($section).DS;
+        return true;
+    }
 
-		// if the path does not exist, bail out immediately
-		if ( ! is_dir($path.$section))
-		{
-			return true;
-		}
+    /**
+     * Delete Cache
+     */
+    public function delete() : void
+    {
+        $file = static::$path . $this->identifier_to_path($this->identifier) . '.cache';
+        clearstatcache(true, $file);
 
-		// get all files in this section
-		$files = \File::read_dir($path.$section, -1, array('\.cache$' => 'file'));
+        if (is_file($file))
+        {
+            unlink($file);
+            $this->reset();
+        }
+    }
 
-		// closure to recusively delete the files
-		$delete = function($folder, $files) use(&$delete, $path)
-		{
-			$folder = rtrim($folder, '\\/').DS;
+    /**
+     * Purge all caches
+     *
+     * @param string $section limit purge to subsection
+     *
+     * @return bool
+     */
+    public function delete_all( ?string $section ) : bool
+    {
+        // get the cache root path and prep the requested section
+        $path    = rtrim(static::$path, '\\/') . DS;
+        $section = $section === null ? '' : static::identifier_to_path($section) . DS;
 
-			foreach ($files as $dir => $file)
-			{
-				if (is_numeric($dir))
-				{
-					if ( ! $result = \File::delete($folder.$file))
-					{
-						return $result;
-					}
-				}
-				else
-				{
-					if ( ! $result = ($delete($folder.$dir, $file)))
-					{
-						return $result;
-					}
-				}
-			}
+        // if the path does not exist, bail out immediately
+        if ( ! is_dir($path . $section))
+        {
+            return true;
+        }
 
-			// if we're processing a sub directory
-			if ($folder != $path)
-			{
-				// remove the folder if no more files are left
-				$files = \File::read_dir($folder);
-				empty($files) and rmdir($folder);
-			}
+        // get all files in this section
+        $files = \Velocite\File::read_dir($path . $section, -1, ['\.cache$' => 'file']);
 
-			return true;
-		};
+        // closure to recusively delete the files
+        $delete = static function($folder, $files) use (&$delete, $path) {
+            $folder = rtrim($folder, '\\/') . DS;
 
-		return $delete($path.$section, $files);
-	}
+            foreach ($files as $dir => $file)
+            {
+                if (is_numeric($dir))
+                {
+                    if ( ! $result =  \Velocite\File::delete($folder . $file))
+                    {
+                        return $result;
+                    }
+                }
+                else
+                {
+                    if ( ! $result = ($delete($folder . $dir, $file)))
+                    {
+                        return $result;
+                    }
+                }
+            }
 
-	// ---------------------------------------------------------------------
+            // if we're processing a sub directory
+            if ($folder != $path)
+            {
+                // remove the folder if no more files are left
+                $files = \Velocite\File::read_dir($folder);
+                empty($files) and rmdir($folder);
+            }
 
-	/**
-	 * Translates a given identifier to a valid path
-	 *
-	 * @param   string
-	 * @return  string
-	 */
-	protected function identifier_to_path($identifier)
-	{
-		// replace dots with dashes
-		$identifier = str_replace('.', DS, $identifier);
+            return true;
+        };
 
-		return $identifier;
-	}
+        return $delete($path . $section, $files);
+    }
 
-	/**
-	 * Prepend the cache properties
-	 *
-	 * @return  string
-	 */
-	protected function prep_contents()
-	{
-		$properties = array(
-			'created'          => $this->created,
-			'expiration'       => $this->expiration,
-			'dependencies'     => $this->dependencies,
-			'content_handler'  => $this->content_handler,
-		);
-		$properties = '{{'.self::PROPS_TAG.'}}'.json_encode($properties).'{{/'.self::PROPS_TAG.'}}';
+    // ---------------------------------------------------------------------
 
-		return $properties.$this->contents;
-	}
+    /**
+     * Translates a given identifier to a valid path
+     *
+     * @param   string
+     * @param mixed $identifier
+     *
+     * @return string
+     */
+    protected function identifier_to_path($identifier) : string
+    {
+        // replace dots with dashes
+        $identifier = str_replace('.', DS, $identifier);
 
-	/**
-	 * Remove the prepended cache properties and save them in class properties
-	 *
-	 * @param   string
-	 * @throws \UnexpectedValueException
-	 */
-	protected function unprep_contents($payload)
-	{
-		$properties_end = strpos($payload, '{{/'.self::PROPS_TAG.'}}');
-		if ($properties_end === false)
-		{
-			throw new \UnexpectedValueException('Cache has bad formatting');
-		}
+        return $identifier;
+    }
 
-		$this->contents = substr($payload, $properties_end + strlen('{{/'.self::PROPS_TAG.'}}'));
-		$props = substr(substr($payload, 0, $properties_end), strlen('{{'.self::PROPS_TAG.'}}'));
-		$props = json_decode($props, true);
-		if ($props === null)
-		{
-			throw new \UnexpectedValueException('Cache properties retrieval failed');
-		}
+    /**
+     * Prepend the cache properties
+     *
+     * @return string
+     */
+    protected function prep_contents() : string
+    {
+        $properties = [
+            'created'          => $this->created,
+            'expiration'       => $this->expiration,
+            'dependencies'     => $this->dependencies,
+            'content_handler'  => $this->content_handler,
+        ];
+        $properties = '{{' . self::PROPS_TAG . '}}' . json_encode($properties) . '{{/' . self::PROPS_TAG . '}}';
 
-		$this->created          = $props['created'];
-		$this->expiration       = is_null($props['expiration']) ? null : (int) ($props['expiration'] - time());
-		$this->dependencies     = $props['dependencies'];
-		$this->content_handler  = $props['content_handler'];
-	}
+        return $properties . $this->contents;
+    }
 
-	/**
-	 * Save a cache, this does the generic pre-processing
-	 *
-	 * @return  bool  success
-	 */
-	protected function _set()
-	{
-		$payload = $this->prep_contents();
-		$id_path = $this->identifier_to_path($this->identifier);
+    /**
+     * Remove the prepended cache properties and save them in class properties
+     *
+     * @param   string
+     * @param mixed $payload
+     *
+     * @throws \UnexpectedValueException
+     */
+    protected function unprep_contents($payload) : void
+    {
+        $properties_end = strpos($payload, '{{/' . self::PROPS_TAG . '}}');
 
-		// create directory if necessary
-		$subdirs = explode(DS, $id_path);
-		if (count($subdirs) > 1)
-		{
-			array_pop($subdirs);
+        if ($properties_end === false)
+        {
+            throw new \UnexpectedValueException('Cache has bad formatting');
+        }
 
-			// check if specified subdir exists
-			if ( ! @is_dir(static::$path.implode(DS, $subdirs)))
-			{
-				// recursively create the directory. we can't use mkdir permissions or recursive
-				// due to the fact that mkdir is restricted by the current users umask
-				$basepath = rtrim(static::$path, DS);
-				$chmod = \Config::get('file.chmod.folders', 0775);
-				foreach ($subdirs as $dir)
-				{
-					$basepath .= DS.$dir;
-					if ( ! is_dir($basepath))
-					{
-						try
-						{
-							if ( ! mkdir($basepath))
-							{
-								return false;
-							}
-							chmod($basepath, $chmod);
-						}
-						catch (\PHPErrorException $e)
-						{
-							return false;
-						}
-					}
-				}
-			}
-		}
+        $this->contents = substr($payload, $properties_end + strlen('{{/' . self::PROPS_TAG . '}}'));
+        $props          = substr(substr($payload, 0, $properties_end), strlen('{{' . self::PROPS_TAG . '}}'));
+        $props          = json_decode($props, true);
 
-		// write the cache
-		$file = static::$path.$id_path.'.cache';
+        if ($props === null)
+        {
+            throw new \UnexpectedValueException('Cache properties retrieval failed');
+        }
 
-		$handle = fopen($file, 'c');
+        $this->created          = $props['created'];
+        $this->expiration       = null === $props['expiration'] ? null : (int) ($props['expiration'] - time());
+        $this->dependencies     = $props['dependencies'];
+        $this->content_handler  = $props['content_handler'];
+    }
 
-		if ( ! $handle)
-		{
-			return false;
-		}
+    /**
+     * Save a cache, this does the generic pre-processing
+     *
+     * @return bool success
+     */
+    protected function _set() : bool
+    {
+        $payload = $this->prep_contents();
+        $id_path = $this->identifier_to_path($this->identifier);
 
-		// wait for a lock
-		while ( ! flock($handle, LOCK_EX));
+        // create directory if necessary
+        $subdirs = explode(DS, $id_path);
 
-		// truncate the file
-		ftruncate($handle, 0);
+        if (count($subdirs) > 1)
+        {
+            array_pop($subdirs);
 
-		// write the cache data
-		fwrite($handle, $payload);
+            // check if specified subdir exists
+            if ( ! @is_dir(static::$path . implode(DS, $subdirs)))
+            {
+                // recursively create the directory. we can't use mkdir permissions or recursive
+                // due to the fact that mkdir is restricted by the current users umask
+                $basepath = rtrim(static::$path, DS);
+                $chmod    = \Velocite\Config::get('file.chmod.folders', 0775);
 
-		// flush any pending output
-		fflush($handle);
+                foreach ($subdirs as $dir)
+                {
+                    $basepath .= DS . $dir;
 
-		//release the lock
-		flock($handle, LOCK_UN);
+                    if ( ! is_dir($basepath))
+                    {
+                        try
+                        {
+                            if ( ! mkdir($basepath))
+                            {
+                                return false;
+                            }
+                            chmod($basepath, $chmod);
+                        }
+                        catch (\PHPErrorException $e)
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
 
-		// close the file
-		fclose($handle);
+        // write the cache
+        $file = static::$path . $id_path . '.cache';
 
-		// set the correct rights on the file
-		chmod($file, \Config::get('file.chmod.files', 0666));
+        $handle = fopen($file, 'c');
 
-		return true;
-	}
+        if ( ! $handle)
+        {
+            return false;
+        }
 
-	/**
-	 * Load a cache, this does the generic post-processing
-	 *
-	 * @return  bool  success
-	 */
-	protected function _get()
-	{
-		$payload = false;
+        // wait for a lock
+        while ( ! flock($handle, LOCK_EX));
 
-		$id_path = $this->identifier_to_path( $this->identifier );
-		$file = static::$path.$id_path.'.cache';
+        // truncate the file
+        ftruncate($handle, 0);
 
-		// normalize the file
-		$file = realpath($file);
+        // write the cache data
+        fwrite($handle, $payload);
 
-		// make sure it exists
-		if (is_file($file))
-		{
-			$handle = fopen($file, 'r');
-			if ($handle)
-			{
-				// wait for a lock
-				while( ! flock($handle, LOCK_SH));
+        // flush any pending output
+        fflush($handle);
 
-				// read the cache data
-				$payload = file_get_contents($file);
+        //release the lock
+        flock($handle, LOCK_UN);
 
-				//release the lock
-				flock($handle, LOCK_UN);
+        // close the file
+        fclose($handle);
 
-				// close the file
-				fclose($handle);
+        // set the correct rights on the file
+        chmod($file, \Velocite\Config::get('file.chmod.files', 0666));
 
-			}
-		}
+        return true;
+    }
 
-		try
-		{
-			$this->unprep_contents($payload);
-		}
-		catch (\UnexpectedValueException $e)
-		{
-			return false;
-		}
+    /**
+     * Load a cache, this does the generic post-processing
+     *
+     * @return bool success
+     */
+    protected function _get() : bool
+    {
+        $payload = false;
 
-		return true;
-	}
+        $id_path = $this->identifier_to_path( $this->identifier );
+        $file    = static::$path . $id_path . '.cache';
 
-	/**
-	 * validate a driver config value
-	 *
-	 * @param   string  $name  name of the config variable to validate
-	 * @param   mixed   $value
-	 * @return  mixed
-	 */
-	protected function _validate_config($name, $value)
-	{
-		switch ($name)
-		{
-			case 'cache_id':
-				if (empty($value) or ! is_string($value))
-				{
-					$value = 'fuel';
-				}
-			break;
+        // normalize the file
+        $file = realpath($file);
 
-			case 'expiration':
-				if (empty($value) or ! is_numeric($value))
-				{
-					$value = null;
-				}
-			break;
-		}
+        // make sure it exists
+        if (is_file($file))
+        {
+            $handle = fopen($file, 'r');
 
-		return $value;
-	}
+            if ($handle)
+            {
+                // wait for a lock
+                while ( ! flock($handle, LOCK_SH));
+
+                // read the cache data
+                $payload = file_get_contents($file);
+
+                //release the lock
+                flock($handle, LOCK_UN);
+
+                // close the file
+                fclose($handle);
+            }
+        }
+
+        try
+        {
+            $this->unprep_contents($payload);
+        }
+        catch (\UnexpectedValueException $e)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * validate a driver config value
+     *
+     * @param string $name  name of the config variable to validate
+     * @param mixed  $value
+     *
+     * @return mixed
+     */
+    protected function _validate_config(string $name, $value) : mixed
+    {
+        switch ($name)
+        {
+            case 'cache_id':
+                if (empty($value) or ! is_string($value))
+                {
+                    $value = 'velocite';
+                }
+
+                break;
+
+            case 'expiration':
+                if (empty($value) or ! is_numeric($value))
+                {
+                    $value = null;
+                }
+
+                break;
+        }
+
+        return $value;
+    }
 }

@@ -6,6 +6,4 @@
 namespace Velocite;
 
 // Exception thrown when the Cache wasn't found
-class CacheNotFoundException extends \OutOfBoundsException
-{
-}
+class CacheNotFoundException extends \OutOfBoundsException {}

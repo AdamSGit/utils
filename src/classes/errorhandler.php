@@ -5,9 +5,6 @@
 
 namespace Velocite;
 
-use Velocite\Exception\DatabaseException;
-use Velocite\Exception\VelociteException;
-
 /**
  * Error handler class
  */

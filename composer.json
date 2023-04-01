@@ -9,7 +9,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Velocite\\": "src/classes/"
+            "Velocite\\": ["src/classes/", "src/exception/"]
         }
     },
     "autoload-dev": {

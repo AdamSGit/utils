@@ -303,6 +303,8 @@ class StrTest extends TestCase
      * @covers Velocite\Str
      * @covers Velocite\Arr
      * @covers Velocite\Config
+     * @covers Velocite\Errorhandler
+     * @covers Velocite\Velocite
      */
     public function test_is_serialized() : void
     {

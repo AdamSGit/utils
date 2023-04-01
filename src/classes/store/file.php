@@ -8,7 +8,7 @@ namespace Velocite\Store;
 use Velocite\Arr;
 use Velocite\Config;
 use Velocite\Finder;
-use Velocite\Exception\StoreException;
+use Velocite\StoreException;
 
 /**
  * A base Store File class for File based stores.

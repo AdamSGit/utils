@@ -5,8 +5,6 @@
 
 namespace Velocite;
 
-use Velocite\Exception\VelociteException;
-
 class Cache
 {
     /**
@@ -20,12 +18,12 @@ class Cache
     /**
      * Creates a new cache instance.
      *
-     * @param mixed $identifier The identifier of the cache, can be anything but empty
-     * @param array $config     Either an array of settings or the storage driver to be used
+     * @param mixed             $identifier The identifier of the cache, can be anything but empty
+     * @param string|array|null $config     Either an array of settings or the storage driver to be used
      *
      * @return Cache\Storage\Driver The new cache object
      */
-    public static function forge($identifier, array $config = []) : Cache\Storage\Driver
+    public static function forge( mixed $identifier, string|array|null $config = [] ) : Cache\Storage\Driver
     {
         // load the default config
         $defaults = Config::get('cache', []);
@@ -44,7 +42,7 @@ class Cache
             throw new VelociteException('No cache driver given or no default cache driver set.');
         }
 
-        $class = 'Cache\\Storage\\' . ucfirst($config['driver']);
+        $class = '\\Velocite\\Cache\\Storage\\' . ucfirst($config['driver']);
 
         // Convert the name to a string when necessary
         $identifier = call_user_func($class . '::stringify_identifier', $identifier);
@@ -57,20 +55,20 @@ class Cache
      * Front for writing the cache, ensures interchangeability of storage drivers. Actual writing
      * is being done by the _set() method which needs to be extended.
      *
-     * @param mixed $identifier   The identifier of the cache, can be anything but empty
-     * @param mixed $contents     The content to be cached
-     * @param bool  $expiration   The time in seconds until the cache will expire, =< 0 or null means no expiration
-     * @param array $dependencies Contains the identifiers of caches this one will depend on (not supported by all drivers!)
+     * @param mixed      $identifier   The identifier of the cache, can be anything but empty
+     * @param mixed|null $contents     The content to be cached
+     * @param integer    $expiration   The time in seconds until the cache will expire, =< 0 or null means no expiration
+     * @param array      $dependencies Contains the identifiers of caches this one will depend on (not supported by all drivers!)
      *
      * @return Cache\Storage\Driver The new Cache object
      */
-    public static function set(mixed $identifier, mixed $contents = null, bool $expiration = false, array $dependencies = []) : Cache\Storage\Driver
+    public static function set(mixed $identifier, mixed $contents = null, ?int $expiration = null, array $dependencies = []) : void
     {
-        $contents = \Fuel::value($contents);
+        $contents = Str::value($contents);
 
         $cache = static::forge($identifier);
 
-        return $cache->set($contents, $expiration, $dependencies);
+        $cache->set($contents, $expiration, $dependencies);
     }
 
     /**
@@ -131,7 +129,9 @@ class Cache
      */
     public static function delete_all( ?string $section = null, ?string $driver = null) : bool
     {
-        $cache = static::forge('__NOT_USED__', $driver);
+        $config = $driver ? ['driver' => $driver] : [];
+
+        $cache = static::forge('__NOT_USED__', $config);
 
         return $cache->delete_all($section);
     }

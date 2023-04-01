@@ -3,7 +3,7 @@
  * Set of php utils forked from Fuelphp framework
  */
 
-namespace Velocite\Exception;
+namespace Velocite;
 
 use Velocite\Config;
 use Velocite\Velocite;
