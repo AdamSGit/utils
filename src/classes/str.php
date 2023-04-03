@@ -420,9 +420,7 @@ class Str
     public static function substr(string $str, int $start, ?int $length = null, ?string $encoding = 'UTF-8') : mixed
     {
         // substr functions don't parse null correctly if the string is multibyte
-        $length = null === $length
-            ? (MBSTRING ? mb_strlen($str, $encoding)
-            : strlen($str)) - $start : $length;
+        $length = null === $length ? static::strlen( $str, $encoding ) : $length;
 
         return (MBSTRING and $encoding)
             ? mb_substr($str, $start, $length, $encoding)
