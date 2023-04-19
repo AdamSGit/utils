@@ -128,6 +128,7 @@ final class Velocite
         Cache::_init();
         Crypt::_init();
         Num::_init();
+        Image::_init();
 
         // Always load config and lang
         $always_load = Config::get('always_load');

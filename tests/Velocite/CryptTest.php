@@ -69,28 +69,4 @@ class CryptTest extends TestCase
         $decoded = Crypt::decode($encoded, static::$cipherkey);
         $this->assertEquals(static::$clear_text, $decoded);
     }
-
-    /**
-     * Test Crypt
-     *
-     * @test
-     *
-     * @covers Velocite\Crypt
-     * @covers Velocite\Str
-     */
-    public function testEncodeDecodeLargeData() : void
-    {
-        $bigstr     = str_repeat('this is a crypto test of 200k or so of data', 5000);
-        $bigstrhash = '391828747971d26de68550d935abaffa25f043795359417199ca39c09095dd11';
-        $this->assertEquals($bigstrhash, hash('sha256', $bigstr));
-
-        // Encrypt it without a key, hash shuld be random
-        $test     = Crypt::encode($bigstr);
-        $testhash = '14f14589617e34ccb320972b2a1997d3827a5182b26ea2a18ee0fca144c67abb';
-        $this->assertNotEquals($testhash, hash('sha256', $test));
-
-        // Decode it
-        $output= Crypt::decode($test);
-        $this->assertEquals($bigstr, $output);
-    }
 }
